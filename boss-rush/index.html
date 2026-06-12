@@ -1,0 +1,2137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<title>Fireboy The Brothers - The Legend of Terra Nemesis (Boss Rush Mode)</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: #000;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+canvas {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+#gameContainer {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+#gameCanvas {
+  display: block;
+}
+#touchControls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  pointer-events: none;
+  z-index: 100;
+}
+#touchControls.active {
+  pointer-events: auto;
+}
+.touch-dpad {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  width: 150px;
+  height: 150px;
+  pointer-events: auto;
+}
+.touch-dpad-area {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background: rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+}
+.touch-dpad-area:active, .touch-dpad-area.pressed {
+  background: rgba(255,255,255,0.4);
+}
+.dpad-up { left: 50px; top: 0; }
+.dpad-down { left: 50px; bottom: 0; }
+.dpad-left { left: 0; top: 50px; }
+.dpad-right { right: 0; top: 50px; }
+.dpad-center { left: 50px; top: 50px; background: rgba(255,255,255,0.05); border: none; }
+
+.touch-btn {
+  position: absolute;
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 1px 1px 2px #000;
+}
+.touch-btn-attack {
+  bottom: 30px;
+  right: 100px;
+  background: rgba(255,50,50,0.4);
+  border: 3px solid rgba(255,100,100,0.6);
+}
+.touch-btn-jump {
+  bottom: 100px;
+  right: 20px;
+  background: rgba(50,150,255,0.4);
+  border: 3px solid rgba(100,180,255,0.6);
+}
+.touch-btn-pause {
+  top: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.2);
+  border: 2px solid rgba(255,255,255,0.4);
+  font-size: 18px;
+}
+.touch-btn:active, .touch-btn.pressed {
+  transform: scale(0.9);
+  filter: brightness(1.5);
+}
+</style>
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+<div id="gameContainer">
+  <canvas id="gameCanvas"></canvas>
+</div>
+
+<script>
+// ============================================================
+// FIREBOY THE BROTHERS - THE LEGEND OF TERRA NEMESIS
+// BOSS RUSH MODE - HTML5 GAME
+// ============================================================
+
+const ASSET_PATH = 'assets/';
+
+// --- CANVAS SETUP ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const GAME_W = 480;
+const GAME_H = 320;
+canvas.width = GAME_W;
+canvas.height = GAME_H;
+
+function resizeCanvas() {
+  const ratio = GAME_W / GAME_H;
+  let w = window.innerWidth;
+  let h = window.innerHeight;
+  if (w / h > ratio) {
+    canvas.style.height = h + 'px';
+    canvas.style.width = (h * ratio) + 'px';
+  } else {
+    canvas.style.width = w + 'px';
+    canvas.style.height = (w / ratio) + 'px';
+  }
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// --- TOUCH DETECTION ---
+const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+// --- ASSET LOADER ---
+const assets = { images: {}, audio: {} };
+const assetList = {
+  images: [
+    'fireboy', 'caroline', 'butch', 'anabel',
+    'background_space', 'platform', 'big_core', 'fire_breath', 'bigcore_laser',
+    'crusher_bot', 'mandler', 'metal_sonic', 'fake_butch',
+    'roaring_knight', 'roaring_metal',
+    'dpad', 'button', 'play'
+  ],
+  audio: [
+    'boss_battle', 'game_over', 'stage_clear',
+    'bigcore_laser', 'boss_defeat', 'boss_warning',
+    'hit_boss', 'impact2', 'jump',
+    'fire_shoot', 'player_death', 'player_hurt',
+    'strain', 'strain2'
+  ]
+};
+
+let loadedCount = 0;
+let totalAssets = assetList.images.length + assetList.audio.length;
+
+function loadAssets() {
+  return new Promise((resolve) => {
+    assetList.images.forEach(name => {
+      const img = new Image();
+      img.onload = () => { loadedCount++; if (loadedCount >= totalAssets) resolve(); };
+      img.onerror = () => { loadedCount++; if (loadedCount >= totalAssets) resolve(); };
+      img.src = ASSET_PATH + name + '.png';
+      assets.images[name] = img;
+    });
+    assetList.audio.forEach(name => {
+      const aud = new Audio();
+      aud.addEventListener('canplaythrough', () => { loadedCount++; if (loadedCount >= totalAssets) resolve(); }, { once: true });
+      aud.onerror = () => { loadedCount++; if (loadedCount >= totalAssets) resolve(); };
+      aud.src = ASSET_PATH + name + '.wav';
+      if (name === 'boss_battle' || name === 'game_over' || name === 'stage_clear') {
+        aud.src = ASSET_PATH + name + '.mp3';
+      }
+      aud.preload = 'auto';
+      assets.audio[name] = aud;
+    });
+    // Safety timeout
+    setTimeout(resolve, 5000);
+  });
+}
+
+function playSound(name, loop = false, volume = 0.5) {
+  const snd = assets.audio[name];
+  if (!snd) return null;
+  try {
+    snd.currentTime = 0;
+    snd.loop = loop;
+    snd.volume = volume;
+    snd.play().catch(() => {});
+    return snd;
+  } catch(e) { return null; }
+}
+
+function stopSound(name) {
+  const snd = assets.audio[name];
+  if (snd) { snd.pause(); snd.currentTime = 0; }
+}
+
+function stopAllSounds() {
+  assetList.audio.forEach(name => stopSound(name));
+}
+
+// --- INPUT SYSTEM ---
+const keys = {};
+const touchState = { up: false, down: false, left: false, right: false, attack: false, jump: false, start: false };
+
+document.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  e.preventDefault();
+});
+document.addEventListener('keyup', e => {
+  keys[e.code] = false;
+  e.preventDefault();
+});
+
+function isLeft() { return keys['ArrowLeft'] || keys['KeyA'] || touchState.left; }
+function isRight() { return keys['ArrowRight'] || keys['KeyD'] || touchState.right; }
+function isUp() { return keys['ArrowUp'] || keys['KeyW'] || touchState.up; }
+function isDown() { return keys['ArrowDown'] || keys['KeyS'] || touchState.down; }
+function isJump() { return keys['Space'] || keys['ArrowUp'] || keys['KeyW'] || touchState.jump; }
+function isAttack() { return keys['KeyZ'] || keys['KeyX'] || keys['KeyJ'] || keys['KeyK'] || touchState.attack; }
+function isStart() { return keys['Enter'] || keys['Escape'] || keys['KeyP'] || touchState.start; }
+
+// --- TOUCH CONTROLS ---
+let touchElements = null;
+let touchActiveIds = {};
+
+function setupTouchControls() {
+  if (!isTouchDevice) return;
+
+  const tc = document.createElement('div');
+  tc.id = 'touchControls';
+  tc.style.cssText = 'position:fixed;bottom:0;left:0;right:0;height:180px;pointer-events:none;z-index:100;display:none;';
+  tc.innerHTML = `
+    <div style="position:absolute;bottom:15px;left:15px;width:140px;height:140px;pointer-events:auto;">
+      <!-- D-Pad Background -->
+      <div style="position:absolute;bottom:0;left:0;width:140px;height:140px;border-radius:50%;background:rgba(0,40,60,0.6);border:2px solid rgba(0,100,140,0.5);"></div>
+      <!-- D-Pad Up -->
+      <div class="touch-dpad-btn" data-dir="up" style="position:absolute;left:45px;top:0;width:50px;height:45px;background:rgba(0,80,100,0.5);border:2px solid rgba(0,150,200,0.6);border-radius:8px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.8);font-size:18px;cursor:pointer;">▲</div>
+      <!-- D-Pad Down -->
+      <div class="touch-dpad-btn" data-dir="down" style="position:absolute;left:45px;bottom:0;width:50px;height:45px;background:rgba(0,80,100,0.5);border:2px solid rgba(0,150,200,0.6);border-radius:8px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.8);font-size:18px;cursor:pointer;">▼</div>
+      <!-- D-Pad Left -->
+      <div class="touch-dpad-btn" data-dir="left" style="position:absolute;left:0;top:45px;width:45px;height:50px;background:rgba(0,80,100,0.5);border:2px solid rgba(0,150,200,0.6);border-radius:8px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.8);font-size:18px;cursor:pointer;">◄</div>
+      <!-- D-Pad Right -->
+      <div class="touch-dpad-btn" data-dir="right" style="position:absolute;right:0;top:45px;width:45px;height:50px;background:rgba(0,80,100,0.5);border:2px solid rgba(0,150,200,0.6);border-radius:8px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.8);font-size:18px;cursor:pointer;">►</div>
+    </div>
+    <!-- Attack Button -->
+    <div class="touch-action-btn" data-btn="attack" style="position:absolute;bottom:40px;right:90px;width:60px;height:60px;border-radius:50%;background:rgba(200,50,50,0.5);border:3px solid rgba(255,100,100,0.7);display:flex;align-items:center;justify-content:center;color:#FFF;font-weight:bold;font-size:14px;text-shadow:1px 1px 2px #000;cursor:pointer;pointer-events:auto;">ATK</div>
+    <!-- Jump Button -->
+    <div class="touch-action-btn" data-btn="jump" style="position:absolute;bottom:105px;right:15px;width:60px;height:60px;border-radius:50%;background:rgba(50,100,200,0.5);border:3px solid rgba(100,150,255,0.7);display:flex;align-items:center;justify-content:center;color:#FFF;font-weight:bold;font-size:14px;text-shadow:1px 1px 2px #000;cursor:pointer;pointer-events:auto;">JMP</div>
+    <!-- Pause Button -->
+    <div class="touch-action-btn" data-btn="start" style="position:absolute;top:5px;right:10px;width:36px;height:36px;border-radius:50%;background:rgba(100,100,100,0.5);border:2px solid rgba(200,200,200,0.5);display:flex;align-items:center;justify-content:center;color:#FFF;font-size:14px;cursor:pointer;pointer-events:auto;">⏸</div>
+  `;
+  document.body.appendChild(tc);
+
+  // Setup touch events for D-pad
+  tc.querySelectorAll('.touch-dpad-btn').forEach(el => {
+    const dir = el.dataset.dir;
+    if (!dir) return;
+    
+    const handleStart = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      touchState[dir] = true;
+      el.style.background = 'rgba(0,180,220,0.7)';
+    };
+    const handleEnd = (e) => {
+      e.preventDefault();
+      touchState[dir] = false;
+      el.style.background = 'rgba(0,80,100,0.5)';
+    };
+    
+    el.addEventListener('touchstart', handleStart, { passive: false });
+    el.addEventListener('touchend', handleEnd, { passive: false });
+    el.addEventListener('touchcancel', handleEnd, { passive: false });
+    
+    // Mouse support for testing
+    el.addEventListener('mousedown', handleStart);
+    el.addEventListener('mouseup', handleEnd);
+    el.addEventListener('mouseleave', handleEnd);
+  });
+
+  // Setup touch events for action buttons
+  tc.querySelectorAll('.touch-action-btn').forEach(el => {
+    const btn = el.dataset.btn;
+    
+    const handleStart = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      touchState[btn] = true;
+      el.style.transform = 'scale(0.9)';
+      el.style.filter = 'brightness(1.5)';
+    };
+    const handleEnd = (e) => {
+      e.preventDefault();
+      touchState[btn] = false;
+      el.style.transform = 'scale(1)';
+      el.style.filter = 'brightness(1)';
+    };
+    
+    el.addEventListener('touchstart', handleStart, { passive: false });
+    el.addEventListener('touchend', handleEnd, { passive: false });
+    el.addEventListener('touchcancel', handleEnd, { passive: false });
+    
+    // Mouse support for testing
+    el.addEventListener('mousedown', handleStart);
+    el.addEventListener('mouseup', handleEnd);
+    el.addEventListener('mouseleave', handleEnd);
+  });
+
+  touchElements = tc;
+}
+
+function showTouchControls(show) {
+  if (touchElements) {
+    touchElements.style.display = show ? 'block' : 'none';
+  }
+}
+
+// --- GAME STATES ---
+const STATE = {
+  LOADING: 0,
+  TITLE: 1,
+  PLAYER_SELECT: 2,
+  STAGE_INTRO: 3,
+  BOSS_WARNING: 4,
+  GAMEPLAY: 5,
+  BOSS_DEFEATED: 6,
+  STAGE_CLEAR: 7,
+  GAME_OVER: 8,
+  TRUE_ENDING: 9,
+  PAUSED: 10
+};
+
+let gameState = STATE.LOADING;
+let prevState = STATE.LOADING;
+
+// --- PLAYER CHARACTERS ---
+const CHARACTERS = {
+  fireboy: {
+    name: 'FIREBOY',
+    color: '#FF4400',
+    accentColor: '#FFAA00',
+    hp: 100,
+    speed: 3,
+    jumpPower: 8,
+    attackPower: 10,
+    attackType: 'fire',
+    projectileColor: '#FF6600',
+    projectileSpeed: 6,
+    spriteKey: 'fireboy'
+  },
+  caroline: {
+    name: 'CAROLINE',
+    color: '#8844CC',
+    accentColor: '#DD88FF',
+    hp: 80,
+    speed: 4,
+    jumpPower: 9,
+    attackPower: 8,
+    attackType: 'energy',
+    projectileColor: '#CC66FF',
+    projectileSpeed: 7,
+    spriteKey: 'caroline'
+  },
+  butch: {
+    name: 'BUTCH',
+    color: '#00CC44',
+    accentColor: '#66FF88',
+    hp: 120,
+    speed: 2.5,
+    jumpPower: 7,
+    attackPower: 14,
+    attackType: 'fist',
+    projectileColor: '#44FF44',
+    projectileSpeed: 5,
+    spriteKey: 'butch'
+  },
+  anabel: {
+    name: 'ANABEL',
+    color: '#FF4488',
+    accentColor: '#FF88BB',
+    hp: 90,
+    speed: 3.5,
+    jumpPower: 8.5,
+    attackPower: 11,
+    attackType: 'heart',
+    projectileColor: '#FF66AA',
+    projectileSpeed: 6.5,
+    spriteKey: 'anabel'
+  }
+};
+
+// --- STAGES ---
+const STAGES = [
+  {
+    id: 1,
+    name: 'DOUBLE MECHA ROCKET',
+    bosses: ['big_core', 'fire_breath'],
+    bossNames: ['BIG CORE MK.I', 'FIRE BREATH'],
+    bossHP: [160, 130],
+    background: 'space',
+    tagline: 'DUAL BOSS BATTLE',
+    platforms: [{ x: 60, y: 230, w: 100 }, { x: 190, y: 180, w: 100 }, { x: 320, y: 230, w: 100 }, { x: 140, y: 130, w: 80 }, { x: 260, y: 130, w: 80 }],
+    gimmick: 'dual_boss'
+  },
+  {
+    id: 2,
+    name: 'ROWDYRUFF RIVAL',
+    bosses: ['fake_butch'],
+    bossNames: ['BUTCH'],
+    bossHP: [200],
+    background: 'space',
+    tagline: 'MIRROR MATCH',
+    platforms: [{ x: 50, y: 220, w: 100 }, { x: 200, y: 180, w: 80 }, { x: 330, y: 220, w: 100 }],
+    gimmick: 'mirror_fight'
+  },
+  {
+    id: 3,
+    name: 'TERRA CRESTA',
+    bosses: ['mandler'],
+    bossNames: ['MANDLER'],
+    bossHP: [250],
+    background: 'space',
+    tagline: 'FORMATION ATTACK',
+    platforms: [{ x: 60, y: 240, w: 100 }, { x: 200, y: 180, w: 80 }, { x: 340, y: 240, w: 100 }, { x: 180, y: 120, w: 120 }],
+    gimmick: 'formation'
+  },
+  {
+    id: 4,
+    name: 'CRUSHER FACTORY',
+    bosses: ['crusher_bot'],
+    bossNames: ['CRUSHER-BOT MK.II'],
+    bossHP: [280],
+    background: 'space',
+    tagline: 'HEAVY MACHINE',
+    platforms: [{ x: 40, y: 250, w: 120 }, { x: 220, y: 190, w: 80 }, { x: 350, y: 250, w: 100 }, { x: 130, y: 130, w: 100 }],
+    gimmick: 'crush'
+  },
+  {
+    id: 5,
+    name: 'METALLIC NIGHTMARE',
+    bosses: ['metal_sonic'],
+    bossNames: ['METAL SONIC'],
+    bossHP: [300],
+    background: 'space',
+    tagline: 'HIGH SPEED DASH',
+    platforms: [{ x: 30, y: 230, w: 100 }, { x: 190, y: 170, w: 100 }, { x: 350, y: 230, w: 100 }, { x: 100, y: 110, w: 80 }, { x: 300, y: 110, w: 80 }],
+    gimmick: 'dash'
+  },
+  {
+    id: 6,
+    name: 'THE ROARING FINALE',
+    bosses: ['roaring_knight'],
+    bossNames: ['THE ROARING KNIGHT'],
+    bossHP: [400],
+    background: 'space',
+    tagline: 'FINAL BOSS',
+    platforms: [{ x: 40, y: 240, w: 80 }, { x: 180, y: 180, w: 120 }, { x: 360, y: 240, w: 80 }, { x: 100, y: 120, w: 80 }, { x: 300, y: 120, w: 80 }, { x: 200, y: 70, w: 80 }],
+    gimmick: 'knight'
+  },
+  {
+    id: 7,
+    name: 'ROARING METAL',
+    bosses: ['roaring_metal'],
+    bossNames: ['ROARING METAL'],
+    bossHP: [550],
+    background: 'space',
+    tagline: 'TRUE FINAL BOSS',
+    platforms: [{ x: 20, y: 250, w: 80 }, { x: 140, y: 190, w: 80 }, { x: 260, y: 190, w: 80 }, { x: 380, y: 250, w: 80 }, { x: 80, y: 130, w: 80 }, { x: 200, y: 100, w: 80 }, { x: 320, y: 130, w: 80 }],
+    gimmick: 'true_final'
+  }
+];
+
+// --- GAME GLOBALS ---
+let selectedChar = null;
+let currentStage = 0;
+let player = null;
+let bosses = [];
+let projectiles = [];
+let particles = [];
+let platforms = [];
+let screenShake = 0;
+let stateTimer = 0;
+let frameCount = 0;
+let lastTime = 0;
+let paused = false;
+let bossBattleMusic = null;
+let titleBlink = 0;
+let selectCursor = 0;
+let stageIntroTimer = 0;
+let bossWarningTimer = 0;
+let stageClearTimer = 0;
+let gameOverTimer = 0;
+let bossDefeatTimer = 0;
+
+// --- PARTICLE SYSTEM ---
+function spawnParticles(x, y, color, count, speed, life) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const spd = Math.random() * speed + 1;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * spd,
+      vy: Math.sin(angle) * spd,
+      color,
+      life: life || 30,
+      maxLife: life || 30,
+      size: Math.random() * 4 + 2
+    });
+  }
+}
+
+function spawnExplosion(x, y, size) {
+  const colors = ['#FF4400', '#FFAA00', '#FF6600', '#FFFF00', '#FF0000'];
+  spawnParticles(x, y, colors[0], size * 2, 4, 40);
+  spawnParticles(x, y, colors[1], size, 3, 30);
+  spawnParticles(x, y, colors[4], size, 5, 20);
+  screenShake = 15;
+  playSound('boss_defeat', false, 0.7);
+  playSound('impact2', false, 0.5);
+}
+
+function updateParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.1;
+    p.life--;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+function drawParticles() {
+  particles.forEach(p => {
+    const alpha = p.life / p.maxLife;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+  });
+  ctx.globalAlpha = 1;
+}
+
+// --- PLAYER ---
+function createPlayer(charKey) {
+  const c = CHARACTERS[charKey];
+  return {
+    x: 100, y: 200,
+    w: 28, h: 36,
+    vx: 0, vy: 0,
+    hp: c.hp,
+    maxHp: c.hp,
+    speed: c.speed,
+    jumpPower: c.jumpPower,
+    attackPower: c.attackPower,
+    attackType: c.attackType,
+    projectileColor: c.projectileColor,
+    projectileSpeed: c.projectileSpeed,
+    charKey: charKey,
+    grounded: false,
+    facing: 1,
+    attacking: false,
+    attackCooldown: 0,
+    invincible: 0,
+    animFrame: 0,
+    animTimer: 0,
+    dead: false
+  };
+}
+
+function updatePlayer() {
+  if (!player || player.dead) return;
+
+  // Movement
+  if (isLeft()) { player.vx = -player.speed; player.facing = -1; }
+  else if (isRight()) { player.vx = player.speed; player.facing = 1; }
+  else { player.vx *= 0.7; }
+
+  // Jump
+  if (isJump() && player.grounded) {
+    player.vy = -player.jumpPower;
+    player.grounded = false;
+    playSound('jump', false, 0.3);
+  }
+
+  // Attack
+  if (isAttack() && player.attackCooldown <= 0) {
+    player.attacking = true;
+    player.attackCooldown = 15;
+    fireProjectile();
+    playSound('fire_shoot', false, 0.4);
+  }
+
+  if (player.attackCooldown > 0) player.attackCooldown--;
+  if (player.attackCooldown < 10) player.attacking = false;
+  if (player.invincible > 0) player.invincible--;
+
+  // Physics
+  player.vy += 0.5; // gravity
+  player.x += player.vx;
+  player.y += player.vy;
+
+  // Platform collision
+  player.grounded = false;
+  platforms.forEach(plat => {
+    if (player.vy >= 0 &&
+        player.x + player.w > plat.x && player.x < plat.x + plat.w &&
+        player.y + player.h > plat.y && player.y + player.h < plat.y + 20) {
+      player.y = plat.y - player.h;
+      player.vy = 0;
+      player.grounded = true;
+    }
+  });
+
+  // Floor
+  if (player.y + player.h > GAME_H - 10) {
+    player.y = GAME_H - 10 - player.h;
+    player.vy = 0;
+    player.grounded = true;
+  }
+
+  // Walls
+  if (player.x < 0) player.x = 0;
+  if (player.x + player.w > GAME_W) player.x = GAME_W - player.w;
+
+  // Animation
+  player.animTimer++;
+  if (player.animTimer > 8) {
+    player.animTimer = 0;
+    player.animFrame = (player.animFrame + 1) % 4;
+  }
+}
+
+function drawPlayer() {
+  if (!player) return;
+  if (player.invincible > 0 && Math.floor(player.invincible / 3) % 2 === 0) return;
+
+  const c = CHARACTERS[player.charKey];
+  const img = assets.images[c.spriteKey];
+  const px = Math.floor(player.x);
+  const py = Math.floor(player.y);
+
+  ctx.save();
+  if (player.facing === -1) {
+    ctx.translate(px + player.w, py);
+    ctx.scale(-1, 1);
+    ctx.drawImage(img, 0, 0, player.w, player.h);
+  } else {
+    ctx.drawImage(img, px, py, player.w, player.h);
+  }
+  ctx.restore();
+
+  // Draw attack effect
+  if (player.attacking && player.attackCooldown > 10) {
+    ctx.fillStyle = c.accentColor;
+    const ax = player.facing === 1 ? px + player.w : px - 10;
+    ctx.fillRect(ax, py + 5, 10, 10);
+    spawnParticles(ax + 5, py + 10, c.projectileColor, 2, 2, 10);
+  }
+
+  // HP bar above player
+  const barW = player.w;
+  const barH = 3;
+  const hpRatio = player.hp / player.maxHp;
+  ctx.fillStyle = '#333';
+  ctx.fillRect(px, py - 6, barW, barH);
+  ctx.fillStyle = hpRatio > 0.5 ? '#44FF44' : hpRatio > 0.25 ? '#FFFF00' : '#FF4444';
+  ctx.fillRect(px, py - 6, barW * hpRatio, barH);
+}
+
+function hurtPlayer(damage) {
+  if (!player || player.invincible > 0 || player.dead) return;
+  player.hp -= damage;
+  player.invincible = 60;
+  screenShake = 8;
+  playSound('player_hurt', false, 0.5);
+  spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#FF0000', 8, 3, 20);
+
+  if (player.hp <= 0) {
+    player.hp = 0;
+    player.dead = true;
+    playSound('player_death', false, 0.7);
+    spawnExplosion(player.x + player.w / 2, player.y + player.h / 2, 5);
+  }
+}
+
+// --- PROJECTILES ---
+function fireProjectile() {
+  if (!player) return;
+  const c = CHARACTERS[player.charKey];
+  projectiles.push({
+    x: player.facing === 1 ? player.x + player.w : player.x - 8,
+    y: player.y + player.h / 2 - 4,
+    w: 8, h: 8,
+    vx: player.facing * player.projectileSpeed,
+    vy: 0,
+    damage: player.attackPower,
+    owner: 'player',
+    color: c.projectileColor,
+    type: c.attackType,
+    life: 60
+  });
+}
+
+function updateProjectiles() {
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const p = projectiles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life--;
+    if (p.life <= 0 || p.x < -20 || p.x > GAME_W + 20 || p.y < -20 || p.y > GAME_H + 20) {
+      projectiles.splice(i, 1);
+      continue;
+    }
+
+    // Player projectile hitting boss
+    if (p.owner === 'player') {
+      bosses.forEach(boss => {
+        if (!boss.dead && p.x + p.w > boss.x && p.x < boss.x + boss.w &&
+            p.y + p.h > boss.y && p.y < boss.y + boss.h) {
+          boss.hp -= p.damage;
+          boss.hitFlash = 8;
+          playSound('hit_boss', false, 0.4);
+          spawnParticles(p.x, p.y, '#FFFFFF', 4, 2, 15);
+          projectiles.splice(i, 1);
+
+          if (boss.hp <= 0) {
+            boss.hp = 0;
+            boss.dead = true;
+            spawnExplosion(boss.x + boss.w / 2, boss.y + boss.h / 2, 8);
+          }
+        }
+      });
+    }
+
+    // Boss projectile hitting player
+    if (p.owner === 'boss' && player && !player.dead) {
+      if (p.x + p.w > player.x && p.x < player.x + player.w &&
+          p.y + p.h > player.y && p.y < player.y + player.h) {
+        hurtPlayer(p.damage);
+        projectiles.splice(i, 1);
+      }
+    }
+  }
+}
+
+function drawProjectiles() {
+  projectiles.forEach(p => {
+    ctx.fillStyle = p.color;
+    if (p.type === 'laser') {
+      ctx.fillRect(p.x, p.y, p.w, p.h);
+    } else if (p.type === 'fire_breath_bomb') {
+      ctx.beginPath();
+      ctx.arc(p.x + p.w / 2, p.y + p.h / 2, p.w / 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Player projectile with glow
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(p.x + p.w / 2, p.y + p.h / 2, p.w / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  });
+}
+
+// --- BOSS CREATION ---
+function createBoss(key, x, y, hp, stage) {
+  const spriteMap = {
+    big_core: 'big_core',
+    fire_breath: 'fire_breath',
+    fake_butch: 'fake_butch',
+    mandler: 'mandler',
+    crusher_bot: 'crusher_bot',
+    metal_sonic: 'metal_sonic',
+    roaring_knight: 'roaring_knight',
+    roaring_metal: 'roaring_metal'
+  };
+
+  const sizes = {
+    big_core: { w: 72, h: 56 },
+    fire_breath: { w: 56, h: 64 },
+    fake_butch: { w: 36, h: 42 },
+    mandler: { w: 80, h: 64 },
+    crusher_bot: { w: 64, h: 72 },
+    metal_sonic: { w: 42, h: 50 },
+    roaring_knight: { w: 58, h: 72 },
+    roaring_metal: { w: 68, h: 80 }
+  };
+
+  const colors = {
+    big_core: '#4488FF',
+    fire_breath: '#FF4400',
+    fake_butch: '#44FF44',
+    mandler: '#FF44AA',
+    crusher_bot: '#FFAA00',
+    metal_sonic: '#FFD700',
+    roaring_knight: '#FFFFFF',
+    roaring_metal: '#FF00FF'
+  };
+
+  const sz = sizes[key] || { w: 48, h: 48 };
+
+  return {
+    key,
+    x, y,
+    w: sz.w, h: sz.h,
+    vx: 0, vy: 0,
+    hp: hp,
+    maxHp: hp,
+    spriteKey: spriteMap[key] || 'big_core',
+    dead: false,
+    hitFlash: 0,
+    phase: 0,
+    attackTimer: 60 + Math.random() * 60,
+    moveTimer: 0,
+    movePattern: 0,
+    animTimer: 0,
+    animFrame: 0,
+    flashTimer: 0,
+    stage: stage
+  };
+}
+
+// --- BOSS AI ---
+function updateBoss(boss) {
+  if (boss.dead) return;
+  if (boss.hitFlash > 0) boss.hitFlash--;
+  boss.animTimer++;
+  if (boss.animTimer > 12) { boss.animTimer = 0; boss.animFrame = (boss.animFrame + 1) % 2; }
+
+  boss.attackTimer--;
+  if (boss.attackTimer <= 0) {
+    bossAttack(boss);
+    boss.attackTimer = getBossAttackDelay(boss);
+  }
+
+  bossMove(boss);
+
+  // Keep in bounds
+  if (boss.x < 0) boss.x = 0;
+  if (boss.x + boss.w > GAME_W) boss.x = GAME_W - boss.w;
+  if (boss.y < 0) boss.y = 0;
+  if (boss.y + boss.h > GAME_H - 30) boss.y = GAME_H - 30 - boss.h;
+}
+
+function getBossAttackDelay(boss) {
+  const delays = {
+    big_core: 50,
+    fire_breath: 70,
+    fake_butch: 35,
+    mandler: 55,
+    crusher_bot: 45,
+    metal_sonic: 30,
+    roaring_knight: 25,
+    roaring_metal: 20
+  };
+  const base = delays[boss.key] || 45;
+  // Speed up as HP decreases
+  const hpRatio = boss.hp / boss.maxHp;
+  return Math.floor(base * (0.5 + hpRatio * 0.5)) + Math.random() * 20;
+}
+
+function bossAttack(boss) {
+  if (!player || player.dead) return;
+  const px = player.x + player.w / 2;
+  const py = player.y + player.h / 2;
+  const bx = boss.x + boss.w / 2;
+  const by = boss.y + boss.h / 2;
+
+  switch (boss.key) {
+    case 'big_core': {
+      // Fire lasers from sides
+      for (let i = -1; i <= 1; i++) {
+        projectiles.push({
+          x: bx - 4, y: by + i * 20 - 4,
+          w: 16, h: 6,
+          vx: -4, vy: i * 0.5,
+          damage: 10, owner: 'boss',
+          color: '#4488FF', type: 'laser', life: 80
+        });
+      }
+      playSound('bigcore_laser', false, 0.4);
+      break;
+    }
+    case 'fire_breath': {
+      // Fire bombs that arc and explode
+      const angle = Math.atan2(py - by, px - bx);
+      for (let s = -0.4; s <= 0.4; s += 0.4) {
+        projectiles.push({
+          x: bx, y: by + boss.h / 2,
+          w: 10, h: 10,
+          vx: Math.cos(angle + s) * 3.5,
+          vy: Math.sin(angle + s) * 3.5 - 2,
+          damage: 10, owner: 'boss',
+          color: '#FF4400', type: 'fire_breath_bomb', life: 70
+        });
+      }
+      // Fire trail particles
+      spawnParticles(bx, by + boss.h / 2, '#FF6600', 5, 2, 12);
+      playSound('fire_shoot', false, 0.3);
+      break;
+    }
+    case 'fake_butch': {
+      // Mirror player attacks
+      const dir = px > bx ? 1 : -1;
+      projectiles.push({
+        x: bx + dir * boss.w / 2, y: by - 4,
+        w: 8, h: 8,
+        vx: dir * 5, vy: 0,
+        damage: 12, owner: 'boss',
+        color: '#44FF44', type: 'mirror', life: 50
+      });
+      // Sometimes jumps
+      if (Math.random() < 0.3 && boss.grounded) {
+        boss.vy = -7;
+      }
+      break;
+    }
+    case 'mandler': {
+      // Formation attack - spread of projectiles
+      const count = boss.hp < boss.maxHp * 0.5 ? 7 : 5;
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 / count) * i;
+        projectiles.push({
+          x: bx, y: by,
+          w: 8, h: 8,
+          vx: Math.cos(angle) * 2.5,
+          vy: Math.sin(angle) * 2.5,
+          damage: 8, owner: 'boss',
+          color: '#FF44AA', type: 'formation', life: 70
+        });
+      }
+      playSound('strain', false, 0.3);
+      break;
+    }
+    case 'crusher_bot': {
+      // Drop heavy projectiles
+      for (let i = 0; i < 3; i++) {
+        projectiles.push({
+          x: player.x + Math.random() * 60 - 30, y: -10,
+          w: 16, h: 16,
+          vx: 0, vy: 3 + Math.random() * 2,
+          damage: 15, owner: 'boss',
+          color: '#FFAA00', type: 'crush', life: 80
+        });
+      }
+      playSound('impact2', false, 0.4);
+      break;
+    }
+    case 'metal_sonic': {
+      // Dash attack + projectile burst
+      const dir = px > bx ? 1 : -1;
+      if (Math.random() < 0.4) {
+        // Dash
+        boss.vx = dir * 8;
+        boss.flashTimer = 20;
+        playSound('strain2', false, 0.4);
+      } else {
+        // Ring projectile
+        for (let i = -2; i <= 2; i++) {
+          projectiles.push({
+            x: bx, y: by,
+            w: 6, h: 6,
+            vx: dir * 4 + i * 0.5, vy: i * 1.5,
+            damage: 8, owner: 'boss',
+            color: '#FFD700', type: 'ring', life: 50
+          });
+        }
+      }
+      break;
+    }
+    case 'roaring_knight': {
+      // Sword slash waves + dark orbs
+      const dir = px > bx ? 1 : -1;
+      if (boss.phase === 0 && boss.hp < boss.maxHp * 0.5) boss.phase = 1;
+
+      if (boss.phase === 0) {
+        // Slash waves
+        for (let i = 0; i < 3; i++) {
+          projectiles.push({
+            x: bx + dir * boss.w / 2, y: by - 10 + i * 15,
+            w: 20, h: 6,
+            vx: dir * 5, vy: 0,
+            damage: 12, owner: 'boss',
+            color: '#FFFFFF', type: 'slash', life: 40
+          });
+        }
+      } else {
+        // Phase 2: Dark orbs that home slightly
+        for (let i = 0; i < 4; i++) {
+          const angle = Math.atan2(py - by, px - bx) + (i - 1.5) * 0.4;
+          projectiles.push({
+            x: bx, y: by,
+            w: 10, h: 10,
+            vx: Math.cos(angle) * 3,
+            vy: Math.sin(angle) * 3,
+            damage: 15, owner: 'boss',
+            color: '#8800FF', type: 'dark_orb', life: 80
+          });
+        }
+      }
+      playSound('strain', false, 0.4);
+      break;
+    }
+    case 'roaring_metal': {
+      // Combined attacks - both knight and metal sonic patterns
+      const dir = px > bx ? 1 : -1;
+      if (boss.hp < boss.maxHp * 0.7) boss.phase = 1;
+      if (boss.hp < boss.maxHp * 0.35) boss.phase = 2;
+
+      if (boss.phase === 0) {
+        // Laser ring
+        for (let i = 0; i < 6; i++) {
+          const angle = (Math.PI * 2 / 6) * i + frameCount * 0.02;
+          projectiles.push({
+            x: bx, y: by,
+            w: 8, h: 8,
+            vx: Math.cos(angle) * 3,
+            vy: Math.sin(angle) * 3,
+            damage: 10, owner: 'boss',
+            color: '#4488FF', type: 'laser', life: 60
+          });
+        }
+        playSound('bigcore_laser', false, 0.3);
+      } else if (boss.phase === 1) {
+        // Dash + slash
+        boss.vx = dir * 10;
+        boss.flashTimer = 15;
+        for (let i = -1; i <= 1; i++) {
+          projectiles.push({
+            x: bx + dir * boss.w, y: by + i * 20,
+            w: 24, h: 8,
+            vx: dir * 6, vy: i * 0.5,
+            damage: 12, owner: 'boss',
+            color: '#FFFFFF', type: 'slash', life: 35
+          });
+        }
+        playSound('strain2', false, 0.4);
+      } else {
+        // Phase 3: Everything at once
+        for (let i = 0; i < 8; i++) {
+          const angle = (Math.PI * 2 / 8) * i + frameCount * 0.03;
+          projectiles.push({
+            x: bx, y: by,
+            w: 10, h: 10,
+            vx: Math.cos(angle) * 3.5,
+            vy: Math.sin(angle) * 3.5,
+            damage: 12, owner: 'boss',
+            color: '#FF00FF', type: 'dark_orb', life: 50
+          });
+        }
+        // Dash
+        if (Math.random() < 0.5) {
+          boss.vx = dir * 12;
+          boss.flashTimer = 10;
+        }
+        playSound('strain', false, 0.5);
+      }
+      break;
+    }
+  }
+}
+
+function bossMove(boss) {
+  if (!player || player.dead) return;
+  const px = player.x + player.w / 2;
+  const py = player.y + player.h / 2;
+  const bx = boss.x + boss.w / 2;
+  const by = boss.y + boss.h / 2;
+
+  boss.moveTimer++;
+
+  switch (boss.key) {
+    case 'big_core':
+      // Slow horizontal drift
+      boss.x += Math.sin(frameCount * 0.02) * 1.5;
+      boss.y += Math.cos(frameCount * 0.015) * 0.8;
+      break;
+
+    case 'fire_breath':
+      // Hover and track player
+      boss.x += (px > bx ? 0.8 : -0.8);
+      boss.y += Math.sin(frameCount * 0.03) * 1.2;
+      break;
+
+    case 'fake_butch':
+      // Chase player aggressively
+      boss.x += (px > bx ? 2 : -2);
+      if (boss.grounded && Math.random() < 0.05) boss.vy = -6;
+      boss.vy += 0.4;
+      boss.y += boss.vy;
+      // Platform collision for boss
+      boss.grounded = false;
+      platforms.forEach(plat => {
+        if (boss.vy >= 0 &&
+            boss.x + boss.w > plat.x && boss.x < plat.x + plat.w &&
+            boss.y + boss.h > plat.y && boss.y + boss.h < plat.y + 20) {
+          boss.y = plat.y - boss.h;
+          boss.vy = 0;
+          boss.grounded = true;
+        }
+      });
+      if (boss.y + boss.h > GAME_H - 10) {
+        boss.y = GAME_H - 10 - boss.h;
+        boss.vy = 0;
+        boss.grounded = true;
+      }
+      break;
+
+    case 'mandler':
+      // Float in figure-8
+      boss.x = GAME_W / 2 + Math.sin(frameCount * 0.015) * 100;
+      boss.y = 80 + Math.sin(frameCount * 0.02) * 40;
+      break;
+
+    case 'crusher_bot':
+      // Slow stomp movement
+      boss.x += (px > bx ? 1 : -1);
+      boss.vy += 0.5;
+      boss.y += boss.vy;
+      if (boss.y + boss.h > GAME_H - 30) {
+        boss.y = GAME_H - 30 - boss.h;
+        boss.vy = 0;
+        // Stomp effect
+        if (boss.vy > 2) {
+          screenShake = 5;
+          playSound('impact2', false, 0.3);
+        }
+      }
+      break;
+
+    case 'metal_sonic':
+      // Fast dashing
+      if (boss.flashTimer > 0) {
+        boss.flashTimer--;
+      } else {
+        boss.x += (px > bx ? 2.5 : -2.5);
+        boss.y += Math.sin(frameCount * 0.05) * 2;
+      }
+      break;
+
+    case 'roaring_knight':
+      // Slow teleports
+      if (boss.moveTimer % 120 === 0) {
+        boss.x = px + (Math.random() > 0.5 ? -80 : 80);
+        boss.y = py - 40;
+        spawnParticles(bx, by, '#FFFFFF', 10, 3, 20);
+      }
+      boss.y += Math.sin(frameCount * 0.025) * 1.5;
+      break;
+
+    case 'roaring_metal':
+      // Aggressive teleport + dash
+      if (boss.flashTimer > 0) {
+        boss.flashTimer--;
+      } else {
+        boss.x += (px > bx ? 2 : -2);
+      }
+      if (boss.moveTimer % 90 === 0) {
+        boss.x = Math.random() * (GAME_W - boss.w);
+        boss.y = Math.random() * (GAME_H * 0.5);
+        spawnParticles(bx, by, '#FF00FF', 15, 4, 25);
+        playSound('strain2', false, 0.3);
+      }
+      break;
+  }
+
+  // Boss contact damage
+  if (player && !player.dead && !player.invincible) {
+    if (boss.x < player.x + player.w && boss.x + boss.w > player.x &&
+        boss.y < player.y + player.h && boss.y + boss.h > player.y) {
+      hurtPlayer(8);
+    }
+  }
+}
+
+function drawBoss(boss) {
+  if (boss.dead) return;
+
+  const img = assets.images[boss.spriteKey];
+  if (!img) return;
+
+  ctx.save();
+  if (boss.hitFlash > 0) {
+    ctx.globalAlpha = 0.5 + Math.sin(boss.hitFlash * 2) * 0.5;
+  }
+
+  // Flash effect for dash bosses
+  if (boss.flashTimer > 0 && boss.flashTimer % 4 < 2) {
+    ctx.globalAlpha = 0.6;
+  }
+
+  // Draw boss sprite
+  ctx.drawImage(img, Math.floor(boss.x), Math.floor(boss.y), boss.w, boss.h);
+
+  // Draw fire aura for fire_breath
+  if (boss.key === 'fire_breath') {
+    for (let i = 0; i < 3; i++) {
+      const fx = boss.x + Math.random() * boss.w;
+      const fy = boss.y - 5 + Math.random() * 8;
+      const fs = 3 + Math.random() * 5;
+      ctx.fillStyle = `rgba(255, ${Math.floor(Math.random() * 150 + 100)}, 0, ${0.5 + Math.random() * 0.3})`;
+      ctx.beginPath();
+      ctx.arc(fx, fy, fs, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Draw energy aura for roaring_metal
+  if (boss.key === 'roaring_metal') {
+    const auraSize = 5 + Math.sin(frameCount * 0.1) * 3;
+    ctx.strokeStyle = `rgba(255, 0, 255, ${0.3 + Math.sin(frameCount * 0.15) * 0.2})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(boss.x + boss.w / 2, boss.y + boss.h / 2, boss.w / 2 + auraSize, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Draw shield for roaring_knight
+  if (boss.key === 'roaring_knight' && boss.phase === 1) {
+    ctx.strokeStyle = `rgba(136, 0, 255, ${0.4 + Math.sin(frameCount * 0.1) * 0.2})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(boss.x + boss.w / 2, boss.y + boss.h / 2, boss.w / 2 + 8, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Dash trail for metal_sonic
+  if (boss.key === 'metal_sonic' && boss.flashTimer > 0) {
+    ctx.globalAlpha = 0.3;
+    ctx.drawImage(img, Math.floor(boss.x - boss.vx * 3), Math.floor(boss.y), boss.w, boss.h);
+    ctx.globalAlpha = 0.15;
+    ctx.drawImage(img, Math.floor(boss.x - boss.vx * 6), Math.floor(boss.y), boss.w, boss.h);
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.restore();
+
+  // HP bar
+  const barW = boss.w + 20;
+  const barH = 5;
+  const barX = boss.x + boss.w / 2 - barW / 2;
+  const barY = boss.y - 12;
+  const hpRatio = boss.hp / boss.maxHp;
+
+  ctx.fillStyle = '#222';
+  ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+  ctx.fillStyle = hpRatio > 0.5 ? '#FF4444' : hpRatio > 0.25 ? '#FF8800' : '#FFFF00';
+  ctx.fillRect(barX, barY, barW * hpRatio, barH);
+  ctx.strokeStyle = '#FFF';
+  ctx.lineWidth = 0.5;
+  ctx.strokeRect(barX, barY, barW, barH);
+
+  // Boss name
+  ctx.fillStyle = '#FFF';
+  ctx.font = 'bold 7px monospace';
+  ctx.textAlign = 'center';
+  const stage = STAGES[boss.stage];
+  if (stage) {
+    const nameIndex = stage.bosses.indexOf(boss.key);
+    if (nameIndex >= 0) {
+      ctx.fillText(stage.bossNames[nameIndex], boss.x + boss.w / 2, barY - 3);
+    }
+  }
+}
+
+// --- DRAWING HELPERS ---
+function drawBackground() {
+  // Space background with stars
+  ctx.fillStyle = '#050520';
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
+  
+  // Draw stars with twinkling
+  for (let i = 0; i < 80; i++) {
+    const sx = (i * 137 + Math.floor(frameCount * 0.1)) % GAME_W;
+    const sy = (i * 97 + i * 31) % GAME_H;
+    const brightness = 0.3 + Math.sin(frameCount * 0.05 + i) * 0.3;
+    const size = (i % 3 === 0) ? 2 : 1;
+    ctx.fillStyle = `rgba(200, 220, 255, ${brightness})`;
+    ctx.fillRect(sx, sy, size, size);
+  }
+  
+  // Nebula effect
+  ctx.fillStyle = 'rgba(30, 10, 80, 0.3)';
+  ctx.beginPath();
+  ctx.arc(150, 200, 80, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(80, 10, 30, 0.2)';
+  ctx.beginPath();
+  ctx.arc(350, 120, 60, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Try to draw the uploaded background on top
+  const bg = assets.images['background_space'];
+  if (bg && bg.complete && bg.naturalWidth > 10) {
+    ctx.globalAlpha = 0.4;
+    ctx.drawImage(bg, 0, 0, GAME_W, GAME_H);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawPlatforms() {
+  const platImg = assets.images['platform'];
+  platforms.forEach(p => {
+    if (platImg && platImg.complete) {
+      ctx.drawImage(platImg, p.x, p.y, p.w, 16);
+    } else {
+      ctx.fillStyle = '#556677';
+      ctx.fillRect(p.x, p.y, p.w, 16);
+      ctx.strokeStyle = '#88AACC';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(p.x, p.y, p.w, 16);
+    }
+  });
+}
+
+function drawFloor() {
+  ctx.fillStyle = '#334455';
+  ctx.fillRect(0, GAME_H - 10, GAME_W, 10);
+  ctx.strokeStyle = '#5577AA';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, GAME_H - 10);
+  ctx.lineTo(GAME_W, GAME_H - 10);
+  ctx.stroke();
+}
+
+function drawHUD() {
+  if (!player) return;
+  const c = CHARACTERS[player.charKey];
+
+  // Character name & HP
+  ctx.fillStyle = '#000';
+  ctx.globalAlpha = 0.7;
+  ctx.fillRect(4, 4, 155, 24);
+  ctx.globalAlpha = 1;
+
+  // Character icon (small sprite)
+  const iconImg = assets.images[c.spriteKey];
+  if (iconImg && iconImg.complete) {
+    ctx.drawImage(iconImg, 8, 6, 16, 20);
+  }
+
+  ctx.fillStyle = c.color;
+  ctx.font = 'bold 9px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(c.name, 28, 15);
+
+  // HP bar
+  const hpBarX = 28;
+  const hpBarY = 18;
+  const hpBarW = 125;
+  const hpBarH = 5;
+  const hpRatio = player.hp / player.maxHp;
+
+  ctx.fillStyle = '#222';
+  ctx.fillRect(hpBarX, hpBarY, hpBarW, hpBarH);
+  ctx.fillStyle = hpRatio > 0.5 ? '#44FF44' : hpRatio > 0.25 ? '#FFFF00' : '#FF4444';
+  ctx.fillRect(hpBarX, hpBarY, hpBarW * hpRatio, hpBarH);
+  ctx.strokeStyle = '#888';
+  ctx.lineWidth = 0.5;
+  ctx.strokeRect(hpBarX, hpBarY, hpBarW, hpBarH);
+
+  // Stage info
+  const stage = STAGES[currentStage];
+  if (stage) {
+    ctx.fillStyle = '#000';
+    ctx.globalAlpha = 0.7;
+    ctx.fillRect(GAME_W - 175, 4, 171, 16);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 7px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('STAGE ' + stage.id + ' - ' + stage.name, GAME_W - 8, 15);
+  }
+
+  // Boss HP display at top center
+  const aliveBosses = bosses.filter(b => !b.dead);
+  if (aliveBosses.length > 0) {
+    const totalW = 200;
+    const totalH = 8;
+    const bx = GAME_W / 2 - totalW / 2;
+    const by = GAME_H - 8;
+    
+    aliveBosses.forEach((boss, i) => {
+      const bw = totalW / aliveBosses.length;
+      const bxB = bx + i * bw;
+      const hpR = boss.hp / boss.maxHp;
+      
+      ctx.fillStyle = '#111';
+      ctx.fillRect(bxB, by, bw - 2, totalH);
+      ctx.fillStyle = hpR > 0.5 ? '#FF4444' : hpR > 0.25 ? '#FF8800' : '#FFFF00';
+      ctx.fillRect(bxB, by, (bw - 2) * hpR, totalH);
+      
+      ctx.fillStyle = '#FFF';
+      ctx.font = '5px monospace';
+      ctx.textAlign = 'center';
+      const stage = STAGES[boss.stage];
+      if (stage) {
+        const ni = stage.bosses.indexOf(boss.key);
+        if (ni >= 0) ctx.fillText(stage.bossNames[ni], bxB + bw / 2, by - 1);
+      }
+    });
+  }
+}
+
+// --- SCREEN STATES ---
+function drawTitleScreen() {
+  drawBackground();
+
+  titleBlink += 0.05;
+
+  // Title
+  ctx.fillStyle = '#000';
+  ctx.globalAlpha = 0.6;
+  ctx.fillRect(20, 30, GAME_W - 40, 180);
+  ctx.globalAlpha = 1;
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FF4400';
+  ctx.font = 'bold 18px monospace';
+  ctx.fillText('FIREBOY THE BROTHERS', GAME_W / 2, 65);
+
+  ctx.fillStyle = '#FFD700';
+  ctx.font = 'bold 12px monospace';
+  ctx.fillText('THE LEGEND OF TERRA NEMESIS', GAME_W / 2, 85);
+
+  ctx.fillStyle = '#FF0066';
+  ctx.font = 'bold 16px monospace';
+  ctx.fillText('BOSS RUSH MODE', GAME_W / 2, 115);
+
+  // Character previews
+  const charKeys = ['fireboy', 'caroline', 'butch', 'anabel'];
+  const charNames = ['FIREBOY', 'CAROLINE', 'BUTCH', 'ANABEL'];
+  const charColors = ['#FF4400', '#8844CC', '#00CC44', '#FF4488'];
+  const startX = 60;
+  charKeys.forEach((key, i) => {
+    const img = assets.images[key];
+    const cx = startX + i * 100;
+    if (img && img.complete) {
+      ctx.drawImage(img, cx - 14, 130, 28, 36);
+    }
+    ctx.fillStyle = charColors[i];
+    ctx.font = '7px monospace';
+    ctx.fillText(charNames[i], cx, 178);
+  });
+
+  // Press Start
+  if (Math.sin(titleBlink * 3) > 0) {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('PRESS ENTER OR TAP TO START', GAME_W / 2, 200);
+  }
+
+  // Controls hint
+  ctx.fillStyle = '#8888AA';
+  ctx.font = '7px monospace';
+  ctx.fillText('ARROWS/WASD: MOVE  SPACE: JUMP  Z/X: ATTACK  P: PAUSE', GAME_W / 2, 290);
+  ctx.fillText('TOUCH CONTROLS AVAILABLE ON MOBILE', GAME_W / 2, 302);
+}
+
+function drawPlayerSelect() {
+  drawBackground();
+
+  ctx.fillStyle = '#000';
+  ctx.globalAlpha = 0.8;
+  ctx.fillRect(10, 10, GAME_W - 20, GAME_H - 20);
+  ctx.globalAlpha = 1;
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FFD700';
+  ctx.font = 'bold 14px monospace';
+  ctx.fillText('SELECT YOUR FIGHTER', GAME_W / 2, 32);
+
+  const charKeys = ['fireboy', 'caroline', 'butch', 'anabel'];
+  const charColors = ['#FF4400', '#8844CC', '#00CC44', '#FF4488'];
+  const charDescs = ['FIRE POWER', 'ENERGY SHOT', 'POWER FIST', 'HEART BLADE'];
+
+  charKeys.forEach((key, i) => {
+    const c = CHARACTERS[key];
+    const cx = 65 + i * 100;
+    const cy = 55;
+
+    // Selection highlight with animated glow
+    if (i === selectCursor) {
+      const glow = Math.sin(frameCount * 0.1) * 0.3 + 0.7;
+      ctx.strokeStyle = `rgba(255, 215, 0, ${glow})`;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(cx - 35, cy - 12, 70, 95);
+
+      // Arrow
+      ctx.fillStyle = '#FFD700';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 20);
+      ctx.lineTo(cx - 7, cy - 13);
+      ctx.lineTo(cx + 7, cy - 13);
+      ctx.fill();
+    }
+
+    // Character sprite
+    const img = assets.images[key];
+    if (img && img.complete) {
+      ctx.drawImage(img, cx - 16, cy, 32, 42);
+    }
+
+    // Character name
+    ctx.fillStyle = charColors[i];
+    ctx.font = 'bold 8px monospace';
+    ctx.fillText(c.name, cx, cy + 52);
+
+    // Attack type description
+    ctx.fillStyle = '#AAA';
+    ctx.font = '5px monospace';
+    ctx.fillText(charDescs[i], cx, cy + 62);
+
+    // Stats bars
+    const stats = [
+      { label: 'HP', val: c.hp, max: 120, color: '#44FF44' },
+      { label: 'SPD', val: c.speed * 20, max: 100, color: '#44AAFF' },
+      { label: 'ATK', val: c.attackPower * 5, max: 80, color: '#FF4444' },
+      { label: 'JMP', val: c.jumpPower * 8, max: 80, color: '#FFAA44' }
+    ];
+
+    stats.forEach((stat, si) => {
+      const barX = cx - 25;
+      const barY = cy + 66 + si * 8;
+      const barW = 50;
+      const barH = 4;
+      ctx.fillStyle = '#222';
+      ctx.fillRect(barX, barY, barW, barH);
+      ctx.fillStyle = stat.color;
+      ctx.fillRect(barX, barY, barW * (stat.val / stat.max), barH);
+      ctx.fillStyle = '#888';
+      ctx.font = '4px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(stat.label, barX - 18, barY + 3);
+      ctx.textAlign = 'center';
+    });
+  });
+
+  // Instructions
+  if (Math.sin(titleBlink * 3) > 0) {
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 9px monospace';
+    ctx.fillText('LEFT/RIGHT TO SELECT - ENTER TO CONFIRM', GAME_W / 2, 285);
+  }
+}
+
+function drawStageIntro() {
+  drawBackground();
+
+  const stage = STAGES[currentStage];
+  ctx.fillStyle = '#000';
+  ctx.globalAlpha = 0.85;
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
+  ctx.globalAlpha = 1;
+
+  // Animated border
+  const borderPulse = Math.sin(frameCount * 0.1) * 0.5 + 0.5;
+  ctx.strokeStyle = `rgba(255, 215, 0, ${0.3 + borderPulse * 0.5})`;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(20, 20, GAME_W - 40, GAME_H - 40);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FFD700';
+  ctx.font = 'bold 22px monospace';
+  ctx.fillText('STAGE ' + stage.id, GAME_W / 2, 80);
+
+  ctx.fillStyle = '#FFF';
+  ctx.font = 'bold 14px monospace';
+  ctx.fillText(stage.name, GAME_W / 2, 110);
+
+  // Tagline (FINAL BOSS / TRUE FINAL BOSS)
+  if (stage.tagline) {
+    ctx.fillStyle = stage.id === 7 ? '#FF00FF' : '#FF4444';
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText('★ ' + stage.tagline + ' ★', GAME_W / 2, 135);
+  }
+
+  ctx.fillStyle = '#FF4444';
+  ctx.font = 'bold 12px monospace';
+  ctx.fillText('VS', GAME_W / 2, 160);
+
+  // Boss names with animated reveal
+  const revealIndex = Math.floor(stageIntroTimer / 20);
+  stage.bossNames.forEach((name, i) => {
+    if (i <= revealIndex) {
+      ctx.fillStyle = '#FF8800';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText(name, GAME_W / 2, 185 + i * 20);
+      
+      // Boss sprite preview
+      if (i < stage.bosses.length) {
+        const bossKey = stage.bosses[i];
+        const spriteMap = {
+          big_core: 'big_core', fire_breath: 'fire_breath', fake_butch: 'fake_butch',
+          mandler: 'mandler', crusher_bot: 'crusher_bot', metal_sonic: 'metal_sonic',
+          roaring_knight: 'roaring_knight', roaring_metal: 'roaring_metal'
+        };
+        const img = assets.images[spriteMap[bossKey]];
+        if (img && img.complete) {
+          ctx.globalAlpha = 0.6;
+          ctx.drawImage(img, GAME_W / 2 + 60 + i * 30, 170 + i * 15, 30, 30);
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+  });
+
+  // Controls hint
+  ctx.fillStyle = '#8888AA';
+  ctx.font = '7px monospace';
+  ctx.fillText('CONTROLS: ARROWS/WASD MOVE | SPACE JUMP | Z/X ATTACK', GAME_W / 2, 260);
+}
+
+function drawBossWarning() {
+  drawBackground();
+  drawPlatforms();
+  drawFloor();
+
+  // Red flashing warning
+  if (Math.floor(bossWarningTimer / 10) % 2 === 0) {
+    ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+    ctx.fillRect(0, 0, GAME_W, GAME_H);
+  }
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FF0000';
+  ctx.font = 'bold 18px monospace';
+  ctx.fillText('⚠ WARNING ⚠', GAME_W / 2, 120);
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 12px monospace';
+  ctx.fillText('BOSS APPROACHING', GAME_W / 2, 150);
+
+  const stage = STAGES[currentStage];
+  stage.bossNames.forEach((name, i) => {
+    ctx.fillStyle = '#FF8800';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(name, GAME_W / 2, 175 + i * 16);
+  });
+}
+
+function drawPaused() {
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FFD700';
+  ctx.font = 'bold 16px monospace';
+  ctx.fillText('PAUSED', GAME_W / 2, GAME_H / 2 - 20);
+
+  ctx.fillStyle = '#FFF';
+  ctx.font = '9px monospace';
+  ctx.fillText('PRESS P OR ESC TO RESUME', GAME_W / 2, GAME_H / 2 + 10);
+  ctx.fillText('PRESS Q TO QUIT', GAME_W / 2, GAME_H / 2 + 25);
+}
+
+function drawGameOver() {
+  ctx.fillStyle = 'rgba(0,0,0,0.85)';
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FF0000';
+  ctx.font = 'bold 22px monospace';
+  ctx.fillText('GAME OVER', GAME_W / 2, 120);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '10px monospace';
+  ctx.fillText('STAGE: ' + STAGES[currentStage].id + ' - ' + STAGES[currentStage].name, GAME_W / 2, 150);
+
+  if (gameOverTimer > 60 && Math.sin(titleBlink * 3) > 0) {
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 9px monospace';
+    ctx.fillText('PRESS ENTER TO RETRY', GAME_W / 2, 190);
+  }
+}
+
+function drawStageClear() {
+  drawBackground();
+
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FFD700';
+  ctx.font = 'bold 18px monospace';
+  ctx.fillText('STAGE CLEAR!', GAME_W / 2, 100);
+
+  const stage = STAGES[currentStage];
+  ctx.fillStyle = '#FFF';
+  ctx.font = '10px monospace';
+  ctx.fillText('STAGE ' + stage.id + ' - ' + stage.name, GAME_W / 2, 130);
+
+  if (currentStage < STAGES.length - 1) {
+    ctx.fillStyle = '#88FF88';
+    ctx.font = '9px monospace';
+    ctx.fillText('NEXT: STAGE ' + STAGES[currentStage + 1].id, GAME_W / 2, 160);
+  }
+
+  if (stageClearTimer > 80 && Math.sin(titleBlink * 3) > 0) {
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 9px monospace';
+    ctx.fillText('PRESS ENTER TO CONTINUE', GAME_W / 2, 200);
+  }
+}
+
+function drawTrueEnding() {
+  drawBackground();
+
+  ctx.fillStyle = 'rgba(0,0,0,0.85)';
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FFD700';
+  ctx.font = 'bold 16px monospace';
+  ctx.fillText('🏆 CONGRATULATIONS! 🏆', GAME_W / 2, 60);
+
+  ctx.fillStyle = '#FF88FF';
+  ctx.font = 'bold 12px monospace';
+  ctx.fillText('BOSS RUSH MODE COMPLETE!', GAME_W / 2, 90);
+
+  ctx.fillStyle = '#FFF';
+  ctx.font = '10px monospace';
+  ctx.fillText('ALL 7 STAGES CLEARED', GAME_W / 2, 120);
+
+  ctx.fillStyle = '#88CCFF';
+  ctx.font = '9px monospace';
+  ctx.fillText('THE ROARING METAL HAS BEEN DEFEATED', GAME_W / 2, 145);
+  ctx.fillText('PEACE RETURNS TO TERRA NEMESIS', GAME_W / 2, 160);
+
+  const c = CHARACTERS[selectedChar];
+  ctx.fillStyle = c.color;
+  ctx.font = 'bold 10px monospace';
+  ctx.fillText(c.name + ' - THE HERO', GAME_W / 2, 190);
+
+  if (Math.sin(titleBlink * 2) > 0) {
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 9px monospace';
+    ctx.fillText('PRESS ENTER FOR TITLE SCREEN', GAME_W / 2, 240);
+  }
+
+  // Fireworks
+  if (frameCount % 20 === 0) {
+    spawnParticles(
+      Math.random() * GAME_W, Math.random() * GAME_H * 0.5,
+      ['#FF4444', '#44FF44', '#4444FF', '#FFFF44', '#FF44FF'][Math.floor(Math.random() * 5)],
+      8, 3, 25
+    );
+  }
+}
+
+// --- GAME INITIALIZATION ---
+function initStage() {
+  const stage = STAGES[currentStage];
+  platforms = stage.platforms.map(p => ({ ...p }));
+  bosses = [];
+  projectiles = [];
+  particles = [];
+
+  // Create bosses
+  stage.bosses.forEach((bossKey, i) => {
+    const bx = GAME_W - 120 + i * 60;
+    const by = 40 + i * 20;
+    const boss = createBoss(bossKey, bx, by, stage.bossHP[i], currentStage);
+    bosses.push(boss);
+  });
+
+  // Reset player position
+  if (player) {
+    player.x = 60;
+    player.y = GAME_H - 60;
+    player.vx = 0;
+    player.vy = 0;
+    player.dead = false;
+    player.invincible = 60;
+    player.hp = player.maxHp;
+  }
+}
+
+// --- STATE TRANSITIONS ---
+let prevStart = false;
+let prevAttack = false;
+let prevJump = false;
+let prevLeft = false;
+let prevRight = false;
+
+function handleInput() {
+  const startPressed = isStart() && !prevStart;
+  const attackPressed = isAttack() && !prevAttack;
+  const leftPressed = isLeft() && !prevLeft;
+  const rightPressed = isRight() && !prevRight;
+
+  switch (gameState) {
+    case STATE.TITLE:
+      if (startPressed) {
+        gameState = STATE.PLAYER_SELECT;
+        selectCursor = 0;
+        titleBlink = 0;
+      }
+      // Also allow tap
+      if (isTouchDevice && isAttack()) {
+        gameState = STATE.PLAYER_SELECT;
+        selectCursor = 0;
+      }
+      break;
+
+    case STATE.PLAYER_SELECT:
+      if (leftPressed) selectCursor = (selectCursor + 3) % 4;
+      if (rightPressed) selectCursor = (selectCursor + 1) % 4;
+      if (startPressed || attackPressed) {
+        const charKeys = ['fireboy', 'caroline', 'butch', 'anabel'];
+        selectedChar = charKeys[selectCursor];
+        player = createPlayer(selectedChar);
+        currentStage = 0;
+        gameState = STATE.STAGE_INTRO;
+        stageIntroTimer = 0;
+      }
+      break;
+
+    case STATE.STAGE_INTRO:
+      if (stageIntroTimer > 90 && startPressed) {
+        gameState = STATE.BOSS_WARNING;
+        bossWarningTimer = 0;
+        playSound('boss_warning', false, 0.6);
+      }
+      break;
+
+    case STATE.BOSS_WARNING:
+      if (bossWarningTimer > 90 && startPressed) {
+        initStage();
+        gameState = STATE.GAMEPLAY;
+        bossBattleMusic = playSound('boss_battle', true, 0.4);
+        showTouchControls(true);
+      }
+      break;
+
+    case STATE.GAMEPLAY:
+      if (startPressed) {
+        prevState = STATE.GAMEPLAY;
+        gameState = STATE.PAUSED;
+        if (bossBattleMusic) bossBattleMusic.pause();
+      }
+      break;
+
+    case STATE.PAUSED:
+      if (startPressed) {
+        gameState = prevState;
+        if (bossBattleMusic) bossBattleMusic.play().catch(() => {});
+      }
+      if (keys['KeyQ']) {
+        stopAllSounds();
+        gameState = STATE.TITLE;
+        showTouchControls(false);
+      }
+      break;
+
+    case STATE.BOSS_DEFEATED:
+      if (bossDefeatTimer > 60) {
+        gameState = STATE.STAGE_CLEAR;
+        stageClearTimer = 0;
+        stopSound('boss_battle');
+        playSound('stage_clear', false, 0.5);
+      }
+      break;
+
+    case STATE.STAGE_CLEAR:
+      if (stageClearTimer > 80 && startPressed) {
+        currentStage++;
+        if (currentStage >= STAGES.length) {
+          gameState = STATE.TRUE_ENDING;
+          stopAllSounds();
+        } else {
+          gameState = STATE.STAGE_INTRO;
+          stageIntroTimer = 0;
+          player.hp = player.maxHp; // Full heal between stages
+          player.dead = false;
+        }
+      }
+      break;
+
+    case STATE.GAME_OVER:
+      if (gameOverTimer > 60 && startPressed) {
+        gameState = STATE.TITLE;
+        stopAllSounds();
+        showTouchControls(false);
+      }
+      break;
+
+    case STATE.TRUE_ENDING:
+      if (startPressed) {
+        gameState = STATE.TITLE;
+        stopAllSounds();
+        showTouchControls(false);
+        currentStage = 0;
+      }
+      break;
+  }
+
+  prevStart = isStart();
+  prevAttack = isAttack();
+  prevJump = isJump();
+  prevLeft = isLeft();
+  prevRight = isRight();
+}
+
+// --- MAIN GAME LOOP ---
+function update() {
+  frameCount++;
+  titleBlink += 0.05;
+
+  handleInput();
+
+  // Screen shake decay
+  if (screenShake > 0) screenShake *= 0.9;
+  if (screenShake < 0.5) screenShake = 0;
+
+  switch (gameState) {
+    case STATE.STAGE_INTRO:
+      stageIntroTimer++;
+      break;
+
+    case STATE.BOSS_WARNING:
+      bossWarningTimer++;
+      break;
+
+    case STATE.GAMEPLAY:
+      updatePlayer();
+      bosses.forEach(b => updateBoss(b));
+      updateProjectiles();
+      updateParticles();
+
+      // Check if all bosses dead
+      if (bosses.length > 0 && bosses.every(b => b.dead)) {
+        gameState = STATE.BOSS_DEFEATED;
+        bossDefeatTimer = 0;
+        stopSound('boss_battle');
+      }
+
+      // Check if player dead
+      if (player && player.dead) {
+        gameState = STATE.GAME_OVER;
+        gameOverTimer = 0;
+        stopSound('boss_battle');
+        playSound('game_over', false, 0.5);
+        showTouchControls(false);
+      }
+      break;
+
+    case STATE.BOSS_DEFEATED:
+      bossDefeatTimer++;
+      updateParticles();
+      break;
+
+    case STATE.STAGE_CLEAR:
+      stageClearTimer++;
+      updateParticles();
+      break;
+
+    case STATE.GAME_OVER:
+      gameOverTimer++;
+      updateParticles();
+      break;
+
+    case STATE.TRUE_ENDING:
+      updateParticles();
+      break;
+  }
+}
+
+function draw() {
+  ctx.save();
+
+  // Screen shake
+  if (screenShake > 0) {
+    const sx = (Math.random() - 0.5) * screenShake * 2;
+    const sy = (Math.random() - 0.5) * screenShake * 2;
+    ctx.translate(sx, sy);
+  }
+
+  switch (gameState) {
+    case STATE.LOADING:
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, GAME_W, GAME_H);
+      ctx.fillStyle = '#FFF';
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('LOADING...', GAME_W / 2, GAME_H / 2);
+      const progress = Math.min(loadedCount / totalAssets, 1);
+      ctx.fillStyle = '#FF4400';
+      ctx.fillRect(GAME_W / 2 - 80, GAME_H / 2 + 15, 160 * progress, 8);
+      break;
+
+    case STATE.TITLE:
+      drawTitleScreen();
+      break;
+
+    case STATE.PLAYER_SELECT:
+      drawPlayerSelect();
+      break;
+
+    case STATE.STAGE_INTRO:
+      drawStageIntro();
+      break;
+
+    case STATE.BOSS_WARNING:
+      drawBossWarning();
+      break;
+
+    case STATE.GAMEPLAY:
+      drawBackground();
+      drawPlatforms();
+      drawFloor();
+      bosses.forEach(b => drawBoss(b));
+      drawPlayer();
+      drawProjectiles();
+      drawParticles();
+      drawHUD();
+      break;
+
+    case STATE.BOSS_DEFEATED:
+      drawBackground();
+      drawPlatforms();
+      drawFloor();
+      drawPlayer();
+      drawParticles();
+
+      // Victory flash
+      ctx.fillStyle = `rgba(255,255,255,${Math.max(0, 1 - bossDefeatTimer / 30)})`;
+      ctx.fillRect(0, 0, GAME_W, GAME_H);
+      break;
+
+    case STATE.STAGE_CLEAR:
+      drawStageClear();
+      drawParticles();
+      break;
+
+    case STATE.GAME_OVER:
+      drawGameOver();
+      drawParticles();
+      break;
+
+    case STATE.TRUE_ENDING:
+      drawTrueEnding();
+      drawParticles();
+      break;
+
+    case STATE.PAUSED:
+      // Draw gameplay underneath
+      drawBackground();
+      drawPlatforms();
+      drawFloor();
+      bosses.forEach(b => drawBoss(b));
+      drawPlayer();
+      drawProjectiles();
+      drawHUD();
+      drawPaused();
+      break;
+  }
+
+  ctx.restore();
+}
+
+// --- GAME LOOP ---
+function gameLoop(timestamp) {
+  if (!lastTime) lastTime = timestamp;
+  const delta = timestamp - lastTime;
+  lastTime = timestamp;
+
+  if (delta < 200) { // Skip if tab was hidden
+    update();
+  }
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+// --- STARTUP ---
+async function startGame() {
+  setupTouchControls();
+  showTouchControls(false);
+
+  await loadAssets();
+
+  gameState = STATE.TITLE;
+  requestAnimationFrame(gameLoop);
+}
+
+// Handle touch tap on title/select screens
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (gameState === STATE.TITLE) {
+    touchState.attack = true;
+    setTimeout(() => { touchState.attack = false; }, 100);
+  }
+  if (gameState === STATE.PLAYER_SELECT) {
+    touchState.attack = true;
+    setTimeout(() => { touchState.attack = false; }, 100);
+  }
+});
+
+canvas.addEventListener('click', e => {
+  if (gameState === STATE.TITLE) {
+    touchState.attack = true;
+    setTimeout(() => { touchState.attack = false; }, 100);
+  }
+  if (gameState === STATE.PLAYER_SELECT) {
+    touchState.attack = true;
+    setTimeout(() => { touchState.attack = false; }, 100);
+  }
+});
+
+startGame();
+</script>
+</body>
+</html>
