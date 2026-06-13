@@ -9,10 +9,14 @@ import { AudioManager } from '@/engine/AudioManager';
 import { GameStateManager } from '@/engine/GameState';
 import { Player } from '@/entities/Player';
 import { Boss } from '@/entities/Boss';
+import { BossFactory } from '@/entities/BossFactory';
+import HUD from './HUD';
+import TouchControls from './TouchControls';
+import { AssetLoader } from '@/lib/assetLoader';
 import { Projectile } from '@/entities/Projectile';
 import { Collision } from '@/engine/Collision';
 import { getCharacter } from '@/entities/characters';
-import { getBoss } from '@/entities/bosses';
+
 
 interface GameCanvasProps {
   characterId: string;
@@ -29,6 +33,7 @@ export default function GameCanvas({ characterId, onGameOver }: GameCanvasProps)
   const bossRef = useRef<Boss | null>(null);
   const projectilesRef = useRef<Projectile[]>([]);
   const [gameState, setGameState] = useState<any>(null);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -68,22 +73,28 @@ export default function GameCanvas({ characterId, onGameOver }: GameCanvasProps)
       gameState.setPlayerHealth(characterDef.stats.maxHealth);
     }
 
-    // Initialize boss
-    const bossDef = getBoss(1);
-    if (bossDef) {
-      const boss = new Boss({
-        x: 300,
-        y: 100,
-        width: 60,
-        height: 60,
-        stats: bossDef.stats,
-        name: bossDef.name,
-      });
-      bossRef.current = boss;
-      gameEngine.addObject(boss);
-      gameState.setBossMaxHealth(bossDef.stats.maxHealth);
-      gameState.setBossHealth(bossDef.stats.maxHealth);
-    }
+    // Function to load a boss for the current stage
+    const loadBoss = (stageNum: number) => {
+      const bossDef = getBoss(stageNum);
+      if (bossDef) {
+        const newBoss = BossFactory.createBoss(stageNum, {
+          x: 300,
+          y: 100,
+          width: 60,
+          height: 60,
+          stats: bossDef.stats,
+          name: bossDef.name,
+        });
+        bossRef.current = newBoss;
+        gameEngine.addObject(newBoss);
+        gameState.setBossMaxHealth(bossDef.stats.maxHealth);
+        gameState.setBossHealth(bossDef.stats.maxHealth);
+        audioManager.playMusic(AssetLoader.getMusic("bossBattle"), true);
+      }
+    };
+
+    // Initial boss load
+    loadBoss(gameState.getState().currentStage);
 
     // Start game
     gameEngine.start();
@@ -93,7 +104,7 @@ export default function GameCanvas({ characterId, onGameOver }: GameCanvasProps)
       const player = playerRef.current;
       const boss = bossRef.current;
 
-      if (!player || !boss) return;
+      if (!player || !boss || isPaused) return;
 
       // Handle input
       const movement = inputManager.getMovementDirection();
@@ -164,10 +175,39 @@ export default function GameCanvas({ characterId, onGameOver }: GameCanvasProps)
       }
 
       if (boss.getStats().health <= 0) {
-        gameEngine.stop();
-        onGameOver(true);
+        // Boss defeated, advance to next stage or victory
+        audioManager.playSFX(AssetLoader.getSFX("bossDefeat"));
+        gameState.nextStage();
+        if (gameState.getState().phase === 'victory') {
+          gameEngine.stop();
+          onGameOver(true);
+        } else {
+          // Clear current game objects except player
+          gameEngine.getObjects().forEach(obj => {
+            if (obj !== player) {
+              obj.active = false;
+            }
+          });
+          projectilesRef.current = [];
+          loadBoss(gameState.getState().currentStage);
+        }
       }
     }, 16); // ~60 FPS
+
+    const handlePauseToggle = () => {
+      setIsPaused(prev => !prev);
+      if (gameEngineRef.current) {
+        if (isPaused) {
+          gameEngineRef.current.start();
+          audioManagerRef.current?.resumeMusic();
+        } else {
+          gameEngineRef.current.stop();
+          audioManagerRef.current?.pauseMusic();
+        }
+      }
+    };
+
+    inputManager.onPauseToggle(handlePauseToggle);
 
     return () => {
       clearInterval(gameLoopInterval);
@@ -176,22 +216,31 @@ export default function GameCanvas({ characterId, onGameOver }: GameCanvasProps)
   }, [characterId, onGameOver]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-black">
-      <canvas
-        ref={canvasRef}
-        className="border-4 border-yellow-400 bg-black"
-        width={800}
-        height={600}
-      />
-      
-      {gameState && (
-        <div className="mt-4 text-white text-center">
-          <p className="text-2xl font-bold">Stage {gameState.currentStage}</p>
-          <p className="text-lg">Score: {gameState.score}</p>
-          <p className="text-lg">Player HP: {gameState.playerHealth}/{gameState.playerMaxHealth}</p>
-          <p className="text-lg">Boss HP: {gameState.bossHealth}/{gameState.bossMaxHealth}</p>
-        </div>
-      )}
-    </div>
+      <div className="relative flex flex-col items-center justify-center min-h-screen bg-black">
+        <canvas
+          ref={canvasRef}
+          className="border-4 border-yellow-400 bg-black"
+          width={800}
+          height={600}
+        />
+        {gameState && (
+          <HUD
+            playerHealth={gameState.playerHealth}
+            playerMaxHealth={gameState.playerMaxHealth}
+            bossHealth={gameState.bossHealth}
+            bossMaxHealth={gameState.bossMaxHealth}
+            score={gameState.score}
+            stage={gameState.currentStage}
+            character={characterId}
+            bossName={bossRef.current?.name || ""}
+          />
+        )}
+        <TouchControls inputManager={inputManagerRef.current!} onPause={handlePauseToggle} />
+        {isPaused && (
+          <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center">
+            <p className="text-white text-5xl font-bold">PAUSED</p>
+          </div>
+        )}
+      </div>
   );
 }

@@ -62,10 +62,16 @@ export class AudioManager {
   /**
    * Play a sound effect
    */
-  playSFX(name: string): void {
+  playSFX(urlOrName: string): void {
     if (this.isMuted) return;
 
-    const audio = this.soundEffects.get(name);
+    let audio = this.soundEffects.get(urlOrName);
+    if (!audio) {
+      // If not cached, assume it's a URL and create a new audio element
+      audio = new Audio(urlOrName);
+      this.soundEffects.set(urlOrName, audio);
+    }
+    
     if (audio) {
       audio.currentTime = 0;
       audio.volume = this.sfxVolume * this.masterVolume;
@@ -78,7 +84,7 @@ export class AudioManager {
   /**
    * Play background music
    */
-  playMusic(url: string, loop = true): void {
+  playMusic(urlOrName: string, loop = true): void {
     if (this.isMuted) return;
 
     // Stop current music
@@ -88,7 +94,7 @@ export class AudioManager {
     }
 
     // Create and play new music
-    this.currentMusic = new Audio(url);
+    this.currentMusic = new Audio(urlOrName);
     this.currentMusic.loop = loop;
     this.currentMusic.volume = this.musicVolume * this.masterVolume;
     this.currentMusic.play().catch(() => {

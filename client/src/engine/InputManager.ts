@@ -45,6 +45,7 @@ export class InputManager {
 
   private fireButtonPressed = false;
   private pauseButtonPressed = false;
+  private pauseToggleCallback: (() => void) | null = null;
 
   constructor() {
     this.setupKeyboardListeners();
@@ -58,6 +59,11 @@ export class InputManager {
     window.addEventListener('keydown', (e) => {
       const inputKey = this.keyMap.get(e.key);
       if (inputKey) {
+        if (inputKey === InputKey.PAUSE) {
+          if (!this.keysPressed.has(inputKey)) {
+            this.pauseToggleCallback?.();
+          }
+        }
         this.keysPressed.add(inputKey);
         e.preventDefault();
       }
@@ -170,6 +176,13 @@ export class InputManager {
   /**
    * Reset all input states
    */
+  /**
+   * Register a callback for pause toggle events
+   */
+  onPauseToggle(callback: () => void): void {
+    this.pauseToggleCallback = callback;
+  }
+
   reset(): void {
     this.keysPressed.clear();
     this.touchPadState = { up: false, down: false, left: false, right: false };

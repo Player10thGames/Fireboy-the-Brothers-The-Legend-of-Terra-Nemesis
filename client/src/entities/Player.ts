@@ -4,6 +4,7 @@
 
 import { GameObject } from '@/engine/GameEngine';
 import { Collision, Rect } from '@/engine/Collision';
+import { AssetLoader } from '@/lib/assetLoader';
 
 export interface PlayerStats {
   health: number;
@@ -45,30 +46,21 @@ export class Player implements GameObject {
     this.stats = { ...config.stats };
     this.character = config.character;
 
-    // Set color based on character
-    this.setCharacterColor();
+    // Load character image
+    AssetLoader.preloadImage(this.character).then(img => {
+      this.image = img;
+    }).catch(error => console.error("Failed to load player image:", error));
   }
 
   /**
    * Set color based on character
    */
-  private setCharacterColor(): void {
-    const colors: { [key: string]: string } = {
-      fireboy: '#FF6B6B',
-      caroline: '#FF69B4',
-      butch: '#DC143C',
-      anabel: '#4169E1',
-    };
-    this.color = colors[this.character] || '#FF6B6B';
-  }
+
 
   /**
    * Load character sprite image
    */
-  loadImage(imageUrl: string): void {
-    this.image = new Image();
-    this.image.src = imageUrl;
-  }
+
 
   /**
    * Update player state
@@ -89,7 +81,7 @@ export class Player implements GameObject {
    * Render player
    */
   render(ctx: CanvasRenderingContext2D): void {
-    if (this.image && this.image.complete) {
+    if (this.image) {
       ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
     } else {
       // Fallback to colored rectangle

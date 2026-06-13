@@ -5,6 +5,7 @@
 import { GameObject } from '@/engine/GameEngine';
 import { Rect } from '@/engine/Collision';
 import { Projectile } from './Projectile';
+import { AssetLoader } from '@/lib/assetLoader';
 
 export interface BossStats {
   health: number;
@@ -20,6 +21,7 @@ export interface BossConfig {
   height: number;
   stats: BossStats;
   name: string;
+  stage: number;
 }
 
 export class Boss implements GameObject {
@@ -33,6 +35,7 @@ export class Boss implements GameObject {
 
   protected stats: BossStats;
   protected name: string;
+  protected imageUrl: string;
   protected color = '#FF0000';
   protected image: HTMLImageElement | null = null;
   protected patternIndex = 0;
@@ -48,15 +51,16 @@ export class Boss implements GameObject {
     this.height = config.height;
     this.stats = { ...config.stats };
     this.name = config.name;
+    this.imageUrl = AssetLoader.getImage(`boss${config.stage}`); // Assuming boss images are named boss1, boss2, etc.
+    AssetLoader.preloadImage(`boss${config.stage}`).then(img => {
+      this.image = img;
+    }).catch(error => console.error("Failed to load boss image:", error));
   }
 
   /**
    * Load boss sprite image
    */
-  loadImage(imageUrl: string): void {
-    this.image = new Image();
-    this.image.src = imageUrl;
-  }
+
 
   /**
    * Update boss state
@@ -86,7 +90,7 @@ export class Boss implements GameObject {
    * Render boss
    */
   render(ctx: CanvasRenderingContext2D): void {
-    if (this.image && this.image.complete) {
+    if (this.image) {
       ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
     } else {
       // Fallback to colored rectangle
