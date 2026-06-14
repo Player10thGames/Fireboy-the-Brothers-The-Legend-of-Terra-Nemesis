@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fireboy: The Legend of Terra Nemesis</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            box-shadow: 0 0 20px rgba(255, 69, 0, 0.5);
+            border: 2px solid #444;
+            background-image: url('Background (Space).png');
+            background-size: cover;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .hud {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+
+        .health-bar-container {
+            width: 200px;
+            height: 20px;
+            background: #333;
+            border: 2px solid #fff;
+            position: relative;
+        }
+
+        .health-bar {
+            height: 100%;
+            background: #f00;
+            width: 100%;
+            transition: width 0.3s ease;
+        }
+
+        #player-health-bar {
+            background: #ff4500;
+        }
+
+        #boss-health-bar {
+            background: #9400d3;
+        }
+
+        .label {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 14px;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px #000;
+        }
+
+        #screen-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        h1 {
+            color: #ff4500;
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 0 0 10px #ff4500;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 24px;
+            background: #ff4500;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: transform 0.2s, background 0.2s;
+            margin: 10px;
+        }
+
+        .btn:hover {
+            background: #ff6347;
+            transform: scale(1.1);
+        }
+
+        #controls-hint {
+            margin-top: 30px;
+            font-size: 18px;
+            color: #aaa;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Mobile Controls */
+        #mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: none;
+            justify-content: space-between;
+            padding: 0 40px;
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+
+        .control-btn {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            user-select: none;
+        }
+
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+
+        @media (max-width: 850px) {
+            #game-container {
+                width: 100vw;
+                height: 75vw;
+            }
+            #mobile-controls {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui-overlay">
+        <div class="hud">
+            <div>
+                <div class="label">Fireboy</div>
+                <div class="health-bar-container">
+                    <div id="player-health-bar" class="health-bar"></div>
+                </div>
+            </div>
+            <div id="boss-hud" class="hidden">
+                <div class="label" style="text-align: right;">Big Core MK.I</div>
+                <div class="health-bar-container">
+                    <div id="boss-health-bar" class="health-bar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-overlay">
+        <h1 id="screen-title">FIREBOY</h1>
+        <p style="font-size: 20px; margin-bottom: 30px;">The Legend of Terra Nemesis</p>
+        <button id="start-btn" class="btn">START GAME</button>
+        <div id="controls-hint">
+            Use ARROW KEYS or WASD to Move<br>
+            Press SPACE to Shoot
+        </div>
+    </div>
+
+    <div id="mobile-controls">
+        <div class="d-pad">
+            <div></div><div class="control-btn" id="btn-up">▲</div><div></div>
+            <div class="control-btn" id="btn-left">◀</div><div></div><div class="control-btn" id="btn-right">▶</div>
+            <div></div><div class="control-btn" id="btn-down">▼</div><div></div>
+        </div>
+        <div class="control-btn" id="btn-fire" style="width: 100px; height: 100px; background: rgba(255, 69, 0, 0.4);">FIRE</div>
+    </div>
+</div>
+
+<script>
+    /**
+     * FIREBOY: THE LEGEND OF TERRA NEMESIS
+     * A self-contained HTML5 Canvas Game
+     */
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const screenOverlay = document.getElementById('screen-overlay');
+    const screenTitle = document.getElementById('screen-title');
+    const startBtn = document.getElementById('start-btn');
+    const playerHealthBar = document.getElementById('player-health-bar');
+    const bossHealthBar = document.getElementById('boss-health-bar');
+    const bossHud = document.getElementById('boss-hud');
+
+    // Game Constants
+    const CANVAS_WIDTH = 800;
+    const CANVAS_HEIGHT = 600;
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = CANVAS_HEIGHT;
+
+    // Game State
+    let isGameRunning = false;
+    let score = 0;
+    let frameCount = 0;
+
+    // Assets
+    const assets = {
+        player: new Image(),
+        boss: new Image(),
+        bg: new Image(),
+        shootSound: new Audio('Player_FireShoot.wav'),
+        hitSound: new Audio('HitBoss.wav'),
+        explosionSound: new Audio('BossDefeat_Explosion.wav'),
+        bgMusic: new Audio('13 Last Evil [Boss Battle].mp3')
+    };
+
+    assets.player.src = 'Fireboy (Playable Characters).png';
+    assets.boss.src = 'Big Core MK.I (Boss).png';
+    assets.bg.src = 'Background (Space).png';
+    assets.bgMusic.loop = true;
+    assets.bgMusic.volume = 0.5;
+
+    // Input Handling
+    const keys = {};
+    window.addEventListener('keydown', e => keys[e.code] = true);
+    window.addEventListener('keyup', e => keys[e.code] = false);
+
+    // Mobile Input
+    const mobileKeys = { up: false, down: false, left: false, right: false, fire: false };
+    const setupMobileBtn = (id, key) => {
+        const btn = document.getElementById(id);
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); mobileKeys[key] = true; });
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); mobileKeys[key] = false; });
+    };
+    setupMobileBtn('btn-up', 'up');
+    setupMobileBtn('btn-down', 'down');
+    setupMobileBtn('btn-left', 'left');
+    setupMobileBtn('btn-right', 'right');
+    setupMobileBtn('btn-fire', 'fire');
+
+    // Classes
+    class Player {
+        constructor() {
+            this.width = 64;
+            this.height = 64;
+            this.x = 50;
+            this.y = CANVAS_HEIGHT / 2 - this.height / 2;
+            this.speed = 5;
+            this.hp = 100;
+            this.maxHp = 100;
+            this.projectiles = [];
+            this.lastFire = 0;
+            this.fireRate = 200; // ms
+        }
+
+        update() {
+            // Movement
+            if (keys['ArrowUp'] || keys['KeyW'] || mobileKeys.up) this.y -= this.speed;
+            if (keys['ArrowDown'] || keys['KeyS'] || mobileKeys.down) this.y += this.speed;
+            if (keys['ArrowLeft'] || keys['KeyA'] || mobileKeys.left) this.x -= this.speed;
+            if (keys['ArrowRight'] || keys['KeyD'] || mobileKeys.right) this.x += this.speed;
+
+            // Boundaries
+            this.x = Math.max(0, Math.min(this.x, CANVAS_WIDTH - this.width));
+            this.y = Math.max(0, Math.min(this.y, CANVAS_HEIGHT - this.height));
+
+            // Shooting
+            const now = Date.now();
+            if ((keys['Space'] || mobileKeys.fire) && now - this.lastFire > this.fireRate) {
+                this.shoot();
+                this.lastFire = now;
+            }
+
+            // Update Projectiles
+            this.projectiles.forEach((p, index) => {
+                p.x += p.speed;
+                if (p.x > CANVAS_WIDTH) this.projectiles.splice(index, 1);
+            });
+        }
+
+        shoot() {
+            this.projectiles.push({
+                x: this.x + this.width,
+                y: this.y + this.height / 2 - 5,
+                width: 20,
+                height: 10,
+                speed: 10,
+                color: '#ff4500'
+            });
+            assets.shootSound.currentTime = 0;
+            assets.shootSound.play().catch(() => {});
+        }
+
+        draw() {
+            // Draw Player
+            if (assets.player.complete) {
+                ctx.drawImage(assets.player, this.x, this.y, this.width, this.height);
+            } else {
+                ctx.fillStyle = '#ff4500';
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+
+            // Draw Projectiles
+            ctx.fillStyle = '#ffcc00';
+            this.projectiles.forEach(p => {
+                ctx.fillRect(p.x, p.y, p.width, p.height);
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#ff4500';
+            });
+            ctx.shadowBlur = 0;
+        }
+
+        takeDamage(amt) {
+            this.hp -= amt;
+            playerHealthBar.style.width = `${Math.max(0, (this.hp / this.maxHp) * 100)}%`;
+            if (this.hp <= 0) gameOver(false);
+        }
+    }
+
+    class Boss {
+        constructor() {
+            this.width = 150;
+            this.height = 100;
+            this.x = CANVAS_WIDTH - this.width - 50;
+            this.y = CANVAS_HEIGHT / 2 - this.height / 2;
+            this.hp = 500;
+            this.maxHp = 500;
+            this.speed = 2;
+            this.direction = 1;
+            this.projectiles = [];
+            this.lastFire = 0;
+            this.fireRate = 1000;
+        }
+
+        update() {
+            // Movement
+            this.y += this.speed * this.direction;
+            if (this.y <= 50 || this.y >= CANVAS_HEIGHT - this.height - 50) {
+                this.direction *= -1;
+            }
+
+            // Shooting
+            const now = Date.now();
+            if (now - this.lastFire > this.fireRate) {
+                this.shoot();
+                this.lastFire = now;
+                this.fireRate = 500 + Math.random() * 1000;
+            }
+
+            // Update Projectiles
+            this.projectiles.forEach((p, index) => {
+                p.x -= p.speed;
+                if (p.x < -p.width) this.projectiles.splice(index, 1);
+            });
+        }
+
+        shoot() {
+            // Triple shot
+            for (let i = -1; i <= 1; i++) {
+                this.projectiles.push({
+                    x: this.x,
+                    y: this.y + this.height / 2 + (i * 30),
+                    width: 30,
+                    height: 15,
+                    speed: 5,
+                    vy: i * 1,
+                    color: '#9400d3'
+                });
+            }
+        }
+
+        draw() {
+            if (assets.boss.complete) {
+                ctx.drawImage(assets.boss, this.x, this.y, this.width, this.height);
+            } else {
+                ctx.fillStyle = '#9400d3';
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+
+            // Draw Projectiles
+            this.projectiles.forEach(p => {
+                p.y += p.vy || 0;
+                ctx.fillStyle = '#ff00ff';
+                ctx.fillRect(p.x, p.y, p.width, p.height);
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#ff00ff';
+            });
+            ctx.shadowBlur = 0;
+        }
+
+        takeDamage(amt) {
+            this.hp -= amt;
+            bossHealthBar.style.width = `${Math.max(0, (this.hp / this.maxHp) * 100)}%`;
+            assets.hitSound.currentTime = 0;
+            assets.hitSound.play().catch(() => {});
+            if (this.hp <= 0) gameOver(true);
+        }
+    }
+
+    let player, boss;
+
+    function init() {
+        player = new Player();
+        boss = new Boss();
+        score = 0;
+        frameCount = 0;
+        playerHealthBar.style.width = '100%';
+        bossHealthBar.style.width = '100%';
+        bossHud.classList.remove('hidden');
+    }
+
+    function checkCollisions() {
+        // Player bullets vs Boss
+        player.projectiles.forEach((p, pIndex) => {
+            if (p.x < boss.x + boss.width &&
+                p.x + p.width > boss.x &&
+                p.y < boss.y + boss.height &&
+                p.y + p.height > boss.y) {
+                boss.takeDamage(10);
+                player.projectiles.splice(pIndex, 1);
+            }
+        });
+
+        // Boss bullets vs Player
+        boss.projectiles.forEach((p, pIndex) => {
+            if (p.x < player.x + player.width &&
+                p.x + p.width > player.x &&
+                p.y < player.y + player.height &&
+                p.y + p.height > player.y) {
+                player.takeDamage(10);
+                boss.projectiles.splice(pIndex, 1);
+            }
+        });
+
+        // Player vs Boss body
+        if (player.x < boss.x + boss.width &&
+            player.x + player.width > boss.x &&
+            player.y < boss.y + boss.height &&
+            player.y + player.height > boss.y) {
+            player.takeDamage(1); // Continuous damage
+        }
+    }
+
+    function gameLoop() {
+        if (!isGameRunning) return;
+
+        ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        
+        // Draw Background (scrolling)
+        frameCount++;
+        const bgX = -(frameCount % CANVAS_WIDTH);
+        if (assets.bg.complete) {
+            ctx.drawImage(assets.bg, bgX, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            ctx.drawImage(assets.bg, bgX + CANVAS_WIDTH, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        }
+
+        player.update();
+        boss.update();
+        checkCollisions();
+
+        player.draw();
+        boss.draw();
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    function gameOver(victory) {
+        isGameRunning = false;
+        assets.bgMusic.pause();
+        
+        if (victory) {
+            assets.explosionSound.play().catch(() => {});
+            screenTitle.innerText = "VICTORY!";
+            screenTitle.style.color = "#00ff00";
+            screenTitle.style.textShadow = "0 0 10px #00ff00";
+        } else {
+            screenTitle.innerText = "GAME OVER";
+            screenTitle.style.color = "#ff0000";
+            screenTitle.style.textShadow = "0 0 10px #ff0000";
+        }
+        
+        startBtn.innerText = "PLAY AGAIN";
+        screenOverlay.classList.remove('hidden');
+    }
+
+    startBtn.addEventListener('click', () => {
+        screenOverlay.classList.add('hidden');
+        init();
+        isGameRunning = true;
+        assets.bgMusic.currentTime = 0;
+        assets.bgMusic.play().catch(() => {
+            console.log("Audio play blocked by browser. Interaction required.");
+        });
+        gameLoop();
+    });
+
+    // Handle window resize for mobile
+    window.addEventListener('resize', () => {
+        // Optional: adjust canvas size if needed
+    });
+
+</script>
+
+</body>
+</html>
