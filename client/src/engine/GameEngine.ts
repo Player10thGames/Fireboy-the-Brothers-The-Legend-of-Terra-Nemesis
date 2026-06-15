@@ -32,7 +32,11 @@ export class GameEngine {
 
   constructor(canvas: HTMLCanvasElement, config: GameConfig) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Failed to get 2D canvas context. The browser may not support Canvas, or the context may already be acquired with a different type.');
+    }
+    this.ctx = ctx;
     this.config = config;
 
     // Set canvas size

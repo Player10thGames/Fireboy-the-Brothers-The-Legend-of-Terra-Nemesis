@@ -136,20 +136,23 @@ export default function GameCanvas({
     gameState.subscribe(setGameState);
 
     const characterDef = getCharacter(characterId);
-    if (characterDef) {
-      const player = new Player({
-        x: 80,
-        y: 260,
-        width: 48,
-        height: 48,
-        stats: characterDef.stats,
-        character: characterId,
-      });
-      playerRef.current = player;
-      gameEngine.addObject(player);
-      gameState.setPlayerMaxHealth(characterDef.stats.maxHealth);
-      gameState.setPlayerHealth(characterDef.stats.maxHealth);
+    if (!characterDef) {
+      console.error(`GameCanvas: unknown character "${characterId}", cannot start game`);
+      onGameOver(false, 0, 0);
+      return;
     }
+    const player = new Player({
+      x: 80,
+      y: 260,
+      width: 48,
+      height: 48,
+      stats: characterDef.stats,
+      character: characterId,
+    });
+    playerRef.current = player;
+    gameEngine.addObject(player);
+    gameState.setPlayerMaxHealth(characterDef.stats.maxHealth);
+    gameState.setPlayerHealth(characterDef.stats.maxHealth);
 
     for (let i = 1; i < startStage; i++) gameState.nextStage();
     startTimeRef.current = Date.now();
@@ -161,7 +164,12 @@ export default function GameCanvas({
 
     const loadBoss = (stageNum: number) => {
       const bossDef = getBoss(stageNum);
-      if (!bossDef) return;
+      if (!bossDef) {
+        console.error(`GameCanvas: no boss definition for stage ${stageNum}`);
+        gameEngine.stop();
+        onGameOver(false, gameState.getState().score, Date.now() - startTimeRef.current);
+        return;
+      }
       const adjustedStats = {
         ...bossDef.stats,
         health: Math.round(bossDef.stats.maxHealth * diffMult.hp),
@@ -176,6 +184,7 @@ export default function GameCanvas({
         height: 80,
         stats: adjustedStats,
         name: bossDef.name,
+        stage: stageNum,
       });
       bossRef.current = newBoss;
       gameEngine.addObject(newBoss);

@@ -180,7 +180,7 @@ function GameApp() {
       won,
       finalScore: score,
       finalTime: time,
-      clearedStages: won ? [...new Set([...prev.clearedStages, ...Array.from({ length: 7 }, (_, i) => i + 1)])] : prev.clearedStages,
+      clearedStages: won ? Array.from(new Set([...prev.clearedStages, ...Array.from({ length: 7 }, (_, i) => i + 1)])) : prev.clearedStages,
     }));
   }, []);
 
