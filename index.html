@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-app-capable" content="yes">
     <meta name="screen-orientation" content="landscape">
-    <title>Fireboy: The Legend of Terra Nemesis - Boss Rush Mode</title>
+    <title>Fireboy: The Brothers - The Legend of Terra Nemesis | Boss Rush Mode</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
 </head>
 <body>
 
@@ -19,17 +21,21 @@
         <div class="hud-section">
             <div class="hud-label" id="hud-player-name">Fireboy</div>
             <div class="health-bar-bg">
-                <div class="health-bar-fill" id="player-hp-fill"></div>
+                <div class="health-bar-fill player-hp" id="player-hp-fill"></div>
             </div>
+            <div class="hud-lives" id="hud-lives"></div>
+        </div>
+        <div class="hud-center">
+            <div id="hud-stage">STAGE 1</div>
+            <div id="hud-score">SCORE: 0</div>
         </div>
         <div class="hud-section" style="text-align:right">
             <div class="hud-label" id="hud-boss-name">Boss</div>
             <div class="health-bar-bg">
-                <div class="health-bar-fill" id="boss-hp-fill"></div>
+                <div class="health-bar-fill boss-hp" id="boss-hp-fill"></div>
             </div>
+            <div class="hud-boss-phase" id="hud-boss-phase"></div>
         </div>
-        <div id="hud-stage">STAGE 1</div>
-        <div id="hud-score">SCORE: 0</div>
     </div>
 
     <!-- Time Attack Timer -->
@@ -42,18 +48,26 @@
 
     <!-- Cutscene Overlay -->
     <div id="cutscene-overlay">
+        <div class="cutscene-border"></div>
         <div class="cutscene-speaker" id="cutscene-speaker">STAGE 1</div>
         <div class="cutscene-text" id="cutscene-text"></div>
-        <div class="cutscene-skip">Press any key to continue...</div>
+        <div class="cutscene-portrait" id="cutscene-portrait"></div>
+        <div class="cutscene-skip">Press SPACE or tap to continue...</div>
     </div>
 
     <!-- Boss Warning -->
-    <div id="boss-warning">WARNING!</div>
+    <div id="boss-warning">
+        <div class="warning-bg"></div>
+        <div class="warning-text" id="warning-text">WARNING!</div>
+        <div class="warning-boss-name" id="warning-boss-name"></div>
+        <div class="warning-lines"></div>
+    </div>
 
     <!-- Stage Clear -->
     <div id="stage-clear">
         <h2>STAGE CLEAR!</h2>
         <p id="clear-stage-name"></p>
+        <div class="clear-stats" id="clear-stats"></div>
     </div>
 
     <!-- Game Over / Victory -->
@@ -61,6 +75,7 @@
         <h2 id="gameover-title">GAME OVER</h2>
         <p class="result-text" id="gameover-result"></p>
         <p class="result-text" id="gameover-time" style="display:none;color:#00ffcc"></p>
+        <div class="result-stats" id="gameover-stats"></div>
         <div style="margin-top:20px">
             <button class="menu-btn" onclick="game.retryStage()">RETRY</button>
             <button class="menu-btn" onclick="game.returnToMenu()">MENU</button>
@@ -85,10 +100,11 @@
             <div class="dpad-btn dpad-down" id="dpad-down">▼</div>
             <div class="dpad-btn dpad-left" id="dpad-left">◀</div>
             <div class="dpad-btn dpad-right" id="dpad-right">▶</div>
+            <div class="dpad-center"></div>
         </div>
         <div class="touch-buttons">
             <div class="touch-action-btn jump-btn" id="btn-jump">JUMP</div>
-            <div class="touch-action-btn" id="btn-fire">FIRE</div>
+            <div class="touch-action-btn fire-btn" id="btn-fire">FIRE</div>
         </div>
         <div class="touch-pause" id="btn-pause">⏸</div>
     </div>
