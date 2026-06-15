@@ -6,6 +6,7 @@ import { GameObject } from '@/engine/GameEngine';
 import { Rect } from '@/engine/Collision';
 import { Projectile } from './Projectile';
 import { AssetLoader } from '@/lib/assetLoader';
+import { SpriteRenderer } from '@/lib/SpriteRenderer';
 
 export interface BossStats {
   health: number;
@@ -44,6 +45,8 @@ export class Boss implements GameObject {
   protected lastAttackTime = 0;
   protected attackCooldown = 500; // 500ms between attacks
 
+  protected stage: number;
+
   constructor(config: BossConfig) {
     this.x = config.x;
     this.y = config.y;
@@ -51,7 +54,8 @@ export class Boss implements GameObject {
     this.height = config.height;
     this.stats = { ...config.stats };
     this.name = config.name;
-    this.imageUrl = AssetLoader.getImage(`boss${config.stage}`); // Assuming boss images are named boss1, boss2, etc.
+    this.stage = config.stage;
+    this.imageUrl = AssetLoader.getImage(`boss${config.stage}`);
     AssetLoader.preloadImage(`boss${config.stage}`).then(img => {
       this.image = img;
     }).catch(error => console.error("Failed to load boss image:", error));
@@ -93,20 +97,26 @@ export class Boss implements GameObject {
     if (this.image) {
       ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
     } else {
-      // Fallback to colored rectangle
-      ctx.fillStyle = this.color;
-      ctx.fillRect(this.x, this.y, this.width, this.height);
-
-      // Draw outline
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(this.x, this.y, this.width, this.height);
-
-      // Draw name
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 14px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText(this.name, this.x + this.width / 2, this.y - 10);
+      try {
+        switch (this.stage) {
+          case 1: SpriteRenderer.drawDoubleMechaRocket(ctx, this.x, this.y, this.width, this.height); break;
+          case 2: SpriteRenderer.drawButchBoss(ctx, this.x, this.y, this.width, this.height); break;
+          case 3: SpriteRenderer.drawMandler(ctx, this.x, this.y, this.width, this.height); break;
+          case 4: SpriteRenderer.drawCrusherBot(ctx, this.x, this.y, this.width, this.height); break;
+          case 5: SpriteRenderer.drawMetalSonic(ctx, this.x, this.y, this.width, this.height); break;
+          case 6: SpriteRenderer.drawRoaringKnight(ctx, this.x, this.y, this.width, this.height); break;
+          case 7: SpriteRenderer.drawRoaringMetal(ctx, this.x, this.y, this.width, this.height); break;
+          default:
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
+      } catch {
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(this.x, this.y, this.width, this.height);
+      }
     }
   }
 

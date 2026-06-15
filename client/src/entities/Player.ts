@@ -5,6 +5,7 @@
 import { GameObject } from '@/engine/GameEngine';
 import { Collision, Rect } from '@/engine/Collision';
 import { AssetLoader } from '@/lib/assetLoader';
+import { SpriteRenderer } from '@/lib/SpriteRenderer';
 
 export interface PlayerStats {
   health: number;
@@ -84,14 +85,26 @@ export class Player implements GameObject {
     if (this.image) {
       ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
     } else {
-      // Fallback to colored rectangle
-      ctx.fillStyle = this.color;
-      ctx.fillRect(this.x, this.y, this.width, this.height);
-
-      // Draw outline
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(this.x, this.y, this.width, this.height);
+      try {
+        switch (this.character) {
+          case 'fireboy': SpriteRenderer.drawFireboy(ctx, this.x, this.y, this.width, this.height); break;
+          case 'caroline': SpriteRenderer.drawCaroline(ctx, this.x, this.y, this.width, this.height); break;
+          case 'butch': SpriteRenderer.drawButch(ctx, this.x, this.y, this.width, this.height); break;
+          case 'anabel': SpriteRenderer.drawAnabel(ctx, this.x, this.y, this.width, this.height); break;
+          default:
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(this.x, this.y, this.width, this.height);
+        }
+      } catch {
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(this.x, this.y, this.width, this.height);
+      }
     }
   }
 

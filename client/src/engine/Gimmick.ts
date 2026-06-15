@@ -2,11 +2,97 @@
  * Gimmick System for stage-specific mechanics
  */
 
+import { particles } from './Particles';
+import { Rect } from './Collision';
+
 export interface Gimmick {
   name: string;
+  speedMultiplier: number;
   update(deltaTime: number): void;
   apply(playerY: number, playerVy: number): { y: number; vy: number };
   render(ctx: CanvasRenderingContext2D): void;
+}
+
+export interface Obstacle {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  hp: number;
+  maxHp: number;
+  respawnTimer: number;
+  active: boolean;
+}
+
+/**
+ * Stage 2 Gimmick: Destructible Obstacles
+ */
+export class DestructibleObstaclesGimmick implements Gimmick {
+  name = "Destructible Obstacles";
+  speedMultiplier = 1;
+  obstacles: Obstacle[] = [];
+  private respawnDelay = 8000;
+
+  constructor(difficulty?: string) {
+    if (difficulty === 'easy') this.speedMultiplier = 0.5;
+    else if (difficulty === 'hard' || difficulty === 'extreme') this.speedMultiplier = 1.3;
+    this.obstacles = [
+      { x: 300, y: 200, width: 40, height: 40, hp: 2, maxHp: 2, respawnTimer: 0, active: true },
+      { x: 350, y: 350, width: 40, height: 40, hp: 2, maxHp: 2, respawnTimer: 0, active: true },
+      { x: 400, y: 450, width: 40, height: 40, hp: 2, maxHp: 2, respawnTimer: 0, active: true },
+    ];
+  }
+
+  update(deltaTime: number): void {
+    const ms = deltaTime * 1000 * this.speedMultiplier;
+    for (const obs of this.obstacles) {
+      if (!obs.active) {
+        obs.respawnTimer += ms;
+        if (obs.respawnTimer >= this.respawnDelay) {
+          obs.active = true;
+          obs.hp = obs.maxHp;
+          obs.respawnTimer = 0;
+        }
+      }
+    }
+  }
+
+  apply(playerY: number, playerVy: number): { y: number; vy: number } {
+    return { y: playerY, vy: playerVy };
+  }
+
+  hitObstacle(obstacleIndex: number): boolean {
+    const obs = this.obstacles[obstacleIndex];
+    if (!obs || !obs.active) return false;
+    obs.hp--;
+    if (obs.hp <= 0) {
+      obs.active = false;
+      obs.respawnTimer = 0;
+      particles.emit(obs.x + obs.width / 2, obs.y + obs.height / 2, 'explosion');
+    }
+    return true;
+  }
+
+  getObstacleBounds(index: number): Rect | null {
+    const obs = this.obstacles[index];
+    if (!obs || !obs.active) return null;
+    return { x: obs.x, y: obs.y, width: obs.width, height: obs.height };
+  }
+
+  render(ctx: CanvasRenderingContext2D): void {
+    for (const obs of this.obstacles) {
+      if (!obs.active) continue;
+      ctx.fillStyle = '#555';
+      ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+      ctx.strokeStyle = '#888';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+      // Health indicator
+      const hpPct = obs.hp / obs.maxHp;
+      ctx.fillStyle = hpPct > 0.5 ? '#44FF44' : '#FF4444';
+      ctx.fillRect(obs.x, obs.y - 6, obs.width * hpPct, 4);
+    }
+  }
 }
 
 /**
@@ -14,10 +100,13 @@ export interface Gimmick {
  */
 export class MovingPlatformsGimmick implements Gimmick {
   name = "Moving Platforms";
+  speedMultiplier = 1;
   private platforms: Array<{ x: number; y: number; width: number; height: number; vx: number }> = [];
   private platformTimer = 0;
 
-  constructor() {
+  constructor(difficulty?: string) {
+    if (difficulty === 'easy') this.speedMultiplier = 0.5;
+    else if (difficulty === 'hard' || difficulty === 'extreme') this.speedMultiplier = 1.3;
     this.platforms = [
       { x: 100, y: 300, width: 100, height: 20, vx: 2 },
       { x: 600, y: 400, width: 100, height: 20, vx: -2 },
@@ -31,7 +120,7 @@ export class MovingPlatformsGimmick implements Gimmick {
     }
 
     this.platforms.forEach(platform => {
-      platform.x += platform.vx;
+      platform.x += platform.vx * this.speedMultiplier;
       if (platform.x < 0 || platform.x > 700) {
         platform.vx *= -1;
       }
@@ -55,11 +144,17 @@ export class MovingPlatformsGimmick implements Gimmick {
  */
 export class GravityShiftGimmick implements Gimmick {
   name = "Gravity Shift";
+  speedMultiplier = 1;
   private gravityTimer = 0;
   private currentGravity = 1; // 1 = normal, -1 = reversed
 
+  constructor(difficulty?: string) {
+    if (difficulty === 'easy') this.speedMultiplier = 0.5;
+    else if (difficulty === 'hard' || difficulty === 'extreme') this.speedMultiplier = 1.3;
+  }
+
   update(deltaTime: number): void {
-    this.gravityTimer += deltaTime * 1000;
+    this.gravityTimer += deltaTime * 1000 * this.speedMultiplier;
     if (this.gravityTimer > 5000) {
       this.gravityTimer = 0;
       this.currentGravity *= -1;
@@ -87,12 +182,19 @@ export class GravityShiftGimmick implements Gimmick {
  */
 export class ShockwaveGimmick implements Gimmick {
   name = "Shockwaves";
+  speedMultiplier = 1;
   private shockwaves: Array<{ x: number; radius: number; maxRadius: number }> = [];
+  shockwaveInterval = 0;
+
+  constructor(difficulty?: string) {
+    if (difficulty === 'easy') this.speedMultiplier = 0.5;
+    else if (difficulty === 'hard' || difficulty === 'extreme') this.speedMultiplier = 1.3;
+  }
 
   update(deltaTime: number): void {
     this.shockwaves = this.shockwaves.filter(sw => sw.radius < sw.maxRadius);
     this.shockwaves.forEach(sw => {
-      sw.radius += 5;
+      sw.radius += 5 * this.speedMultiplier;
     });
   }
 
@@ -120,11 +222,14 @@ export class ShockwaveGimmick implements Gimmick {
  */
 export class RingCollectionGimmick implements Gimmick {
   name = "Ring Collection";
+  speedMultiplier = 1;
   private rings: Array<{ x: number; y: number; collected: boolean }> = [];
   private ringTimer = 0;
   public collectedRings = 0;
 
-  constructor() {
+  constructor(difficulty?: string) {
+    if (difficulty === 'easy') this.speedMultiplier = 0.5;
+    else if (difficulty === 'hard' || difficulty === 'extreme') this.speedMultiplier = 1.3;
     this.spawnRings();
   }
 
@@ -140,7 +245,7 @@ export class RingCollectionGimmick implements Gimmick {
   }
 
   update(deltaTime: number): void {
-    this.ringTimer += deltaTime * 1000;
+    this.ringTimer += deltaTime * 1000 * this.speedMultiplier;
     if (this.ringTimer > 10000) {
       this.ringTimer = 0;
       this.spawnRings();
@@ -188,6 +293,7 @@ export class RingCollectionGimmick implements Gimmick {
  */
 export class PhaseTransitionGimmick implements Gimmick {
   name = "Phase Transitions";
+  speedMultiplier = 1;
   private phase = 0;
   private phaseThresholds = [0.75, 0.5, 0.25]; // Boss health percentages
 

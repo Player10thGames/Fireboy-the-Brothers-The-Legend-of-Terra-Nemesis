@@ -1,13 +1,14 @@
 /**
  * Time Attack Screen
  * Race against the clock to defeat all bosses
+ * Stores top 5 times per stage in localStorage
  */
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { getAllBosses } from '@/entities/bosses';
 
-interface TimeAttackRecord {
+export interface TimeAttackRecord {
   stage: number;
-  time: number; // in milliseconds
+  time: number;
   character: string;
   date: string;
 }
@@ -18,20 +19,41 @@ interface TimeAttackProps {
   records?: TimeAttackRecord[];
 }
 
+const STORAGE_KEY = 'terra-nemesis-times';
+
+export function loadTimeAttackRecords(): TimeAttackRecord[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as TimeAttackRecord[];
+  } catch { /* ignore */ }
+  return [];
+}
+
+export function saveTimeAttackRecord(record: TimeAttackRecord): boolean {
+  const records = loadTimeAttackRecords();
+  const stageRecords = records.filter(r => r.stage === record.stage);
+  const isNewRecord = stageRecords.length < 5 || stageRecords.some(r => r.time > record.time);
+  records.push(record);
+  records.sort((a, b) => a.time - b.time);
+  // Keep top 5 per stage
+  const grouped: Record<number, TimeAttackRecord[]> = {};
+  for (const r of records) {
+    if (!grouped[r.stage]) grouped[r.stage] = [];
+    if (grouped[r.stage].length < 5) grouped[r.stage].push(r);
+  }
+  const flat = Object.values(grouped).flat();
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(flat));
+  } catch { /* ignore */ }
+  return isNewRecord;
+}
+
 function formatTime(ms: number): string {
   const minutes = Math.floor(ms / 60000);
   const seconds = Math.floor((ms % 60000) / 1000);
   const centiseconds = Math.floor((ms % 1000) / 10);
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
 }
-
-const DEMO_RECORDS: TimeAttackRecord[] = [
-  { stage: 7, time: 185340, character: 'Fireboy', date: '2025-06-10' },
-  { stage: 7, time: 201500, character: 'Anabel', date: '2025-06-09' },
-  { stage: 7, time: 223000, character: 'Caroline', date: '2025-06-08' },
-  { stage: 5, time: 112000, character: 'Butch', date: '2025-06-07' },
-  { stage: 3, time: 67000, character: 'Fireboy', date: '2025-06-06' },
-];
 
 const BOSS_NAMES = [
   'Duo Mecha Rocket',
@@ -43,10 +65,12 @@ const BOSS_NAMES = [
   'Roaring Metal',
 ];
 
-export default function TimeAttack({ onStartTimeAttack, onBack, records = DEMO_RECORDS }: TimeAttackProps) {
+export default function TimeAttack({ onStartTimeAttack, onBack }: TimeAttackProps) {
   const [selectedMode, setSelectedMode] = useState<'full' | 'single'>('full');
   const [selectedStage, setSelectedStage] = useState(1);
   const bosses = getAllBosses();
+
+  const records = useMemo(() => loadTimeAttackRecords(), []);
 
   const handleStart = () => {
     onStartTimeAttack(selectedMode === 'full' ? 1 : selectedStage);
@@ -182,7 +206,7 @@ export default function TimeAttack({ onStartTimeAttack, onBack, records = DEMO_R
             </div>
           ) : (
             <div className="space-y-2">
-              {records.slice(0, 5).map((rec, i) => (
+              {records.sort((a, b) => a.time - b.time).slice(0, 5).map((rec, i) => (
                 <div
                   key={i}
                   className="flex items-center justify-between py-1 border-b border-slate-800"

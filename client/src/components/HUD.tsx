@@ -1,8 +1,9 @@
 /**
  * HUD Component — Boss Rush Mode
- * Displays health bars, score, stage, boss name, and controls hint
+ * Displays health bars, score, stage, boss name, combo, boss phase, ring count, and character portrait
  */
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
+import { SpriteRenderer } from '@/lib/SpriteRenderer';
 
 interface HUDProps {
   playerHealth: number;
@@ -13,6 +14,9 @@ interface HUDProps {
   score: number;
   stage: number;
   character: string;
+  comboCount?: number;
+  bossPhase?: number;
+  ringCount?: number;
 }
 
 function HealthBar({
@@ -70,6 +74,31 @@ const STAGE_LABELS: Record<number, string> = {
   7: 'TRUE FINALE',
 };
 
+function CharacterPortrait({ character }: { character: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, 32, 32);
+    try {
+      switch (character) {
+        case 'fireboy': SpriteRenderer.drawFireboy(ctx, 0, 0, 32, 32); break;
+        case 'caroline': SpriteRenderer.drawCaroline(ctx, 0, 0, 32, 32); break;
+        case 'butch': SpriteRenderer.drawButch(ctx, 0, 0, 32, 32); break;
+        case 'anabel': SpriteRenderer.drawAnabel(ctx, 0, 0, 32, 32); break;
+      }
+    } catch {
+      ctx.fillStyle = '#FF6B6B';
+      ctx.fillRect(4, 4, 24, 24);
+    }
+  }, [character]);
+
+  return <canvas ref={canvasRef} width={32} height={32} style={{ imageRendering: 'pixelated' }} />;
+}
+
 export default function HUD({
   playerHealth,
   playerMaxHealth,
@@ -79,6 +108,9 @@ export default function HUD({
   score,
   stage,
   character,
+  comboCount = 0,
+  bossPhase,
+  ringCount,
 }: HUDProps) {
   return (
     <div
@@ -89,18 +121,21 @@ export default function HUD({
       }}
     >
       <div className="flex justify-between items-start gap-4">
-        {/* Left: Player HP */}
-        <div style={{ minWidth: 160, flex: 1 }}>
-          <HealthBar
-            value={playerHealth}
-            max={playerMaxHealth}
-            color="#00CC44"
-            borderColor="#00AA33"
-            label={`♦ ${character.toUpperCase()}`}
-          />
+        {/* Left: Player HP with portrait */}
+        <div className="flex items-start gap-2" style={{ minWidth: 160, flex: 1 }}>
+          <CharacterPortrait character={character} />
+          <div className="flex-1">
+            <HealthBar
+              value={playerHealth}
+              max={playerMaxHealth}
+              color="#00CC44"
+              borderColor="#00AA33"
+              label={`♦ ${character.toUpperCase()}`}
+            />
+          </div>
         </div>
 
-        {/* Center: Stage + Score */}
+        {/* Center: Stage + Score + Combo */}
         <div
           className="text-center flex-shrink-0"
           style={{ fontFamily: "'Press Start 2P', monospace" }}
@@ -117,6 +152,30 @@ export default function HUD({
           >
             {score.toLocaleString()}
           </div>
+          {comboCount > 1 && (
+            <div
+              className="text-orange-400 font-bold animate-pulse"
+              style={{ fontSize: 'clamp(0.25rem, 0.7vw, 0.4rem)' }}
+            >
+              {comboCount}x COMBO
+            </div>
+          )}
+          {bossPhase !== undefined && (stage === 6 || stage === 7) && (
+            <div
+              className="text-red-400"
+              style={{ fontSize: 'clamp(0.25rem, 0.7vw, 0.38rem)' }}
+            >
+              PHASE {bossPhase + 1} / 3
+            </div>
+          )}
+          {ringCount !== undefined && stage === 5 && (
+            <div
+              className="text-yellow-300"
+              style={{ fontSize: 'clamp(0.25rem, 0.7vw, 0.38rem)' }}
+            >
+              💍 {ringCount}
+            </div>
+          )}
         </div>
 
         {/* Right: Boss HP */}

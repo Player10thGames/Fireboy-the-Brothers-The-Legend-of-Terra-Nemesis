@@ -11,7 +11,7 @@ import MainMenu from "./pages/MainMenu";
 import CharacterSelect from "./pages/CharacterSelect";
 import StageSelect from "./pages/StageSelect";
 import Options from "./pages/Options";
-import TimeAttack from "./pages/TimeAttack";
+import TimeAttack, { saveTimeAttackRecord } from "./pages/TimeAttack";
 import Extra from "./pages/Extra";
 import GameCanvas from "./components/GameCanvas";
 import { OptionsSettings } from "./pages/Options";
@@ -174,14 +174,25 @@ function GameApp() {
   }, []);
 
   const handleGameOver = useCallback((won: boolean, score = 0, time = 0) => {
-    setState(prev => ({
-      ...prev,
-      phase: 'gameOver',
-      won,
-      finalScore: score,
-      finalTime: time,
-      clearedStages: won ? [...new Set([...prev.clearedStages, ...Array.from({ length: 7 }, (_, i) => i + 1)])] : prev.clearedStages,
-    }));
+    setState(prev => {
+      // Save Time Attack record if applicable
+      if (prev.isTimeAttack && won && time > 0) {
+        saveTimeAttackRecord({
+          stage: prev.startStage || 7,
+          time,
+          character: prev.selectedCharacter || 'fireboy',
+          date: new Date().toLocaleDateString(),
+        });
+      }
+      return {
+        ...prev,
+        phase: 'gameOver',
+        won,
+        finalScore: score,
+        finalTime: time,
+        clearedStages: won ? Array.from(new Set([...prev.clearedStages, ...Array.from({ length: 7 }, (_, i) => i + 1)])) : prev.clearedStages,
+      };
+    });
   }, []);
 
   const handleRetry = useCallback(() => {

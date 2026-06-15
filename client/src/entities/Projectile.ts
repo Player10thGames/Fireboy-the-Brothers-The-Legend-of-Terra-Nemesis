@@ -14,6 +14,10 @@ export interface ProjectileConfig {
   owner: 'player' | 'boss';
   width?: number;
   height?: number;
+  color?: string;
+  homing?: boolean;
+  homingTarget?: { x: number; y: number };
+  maxDistance?: number;
 }
 
 export class Projectile implements GameObject {
@@ -31,6 +35,11 @@ export class Projectile implements GameObject {
   private createdAt = Date.now();
   private color: string;
 
+  homing: boolean;
+  homingTarget: { x: number; y: number } | null;
+  private startX: number;
+  private maxDistance: number;
+
   constructor(config: ProjectileConfig) {
     this.x = config.x;
     this.y = config.y;
@@ -40,16 +49,48 @@ export class Projectile implements GameObject {
     this.owner = config.owner;
     this.width = config.width || 8;
     this.height = config.height || 8;
-    this.color = config.owner === 'player' ? '#FFD700' : '#FF6B6B';
+    this.color = config.color || (config.owner === 'player' ? '#FFD700' : '#FF6B6B');
+    this.homing = config.homing || false;
+    this.homingTarget = config.homingTarget || null;
+    this.startX = config.x;
+    this.maxDistance = config.maxDistance || 0;
   }
 
   /**
    * Update projectile
    */
   update(deltaTime: number): void {
+    // Homing steering
+    if (this.homing && this.homingTarget) {
+      const cx = this.x + this.width / 2;
+      const cy = this.y + this.height / 2;
+      const dx = this.homingTarget.x - cx;
+      const dy = this.homingTarget.y - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > 1) {
+        this.vx += (dx / dist) * 0.3;
+        this.vy += (dy / dist) * 0.3;
+        const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+        const maxSpeed = 6;
+        if (speed > maxSpeed) {
+          this.vx = (this.vx / speed) * maxSpeed;
+          this.vy = (this.vy / speed) * maxSpeed;
+        }
+      }
+    }
+
     // Move projectile
     this.x += this.vx * deltaTime * 60;
     this.y += this.vy * deltaTime * 60;
+
+    // Max distance check (for melee projectiles)
+    if (this.maxDistance > 0) {
+      const traveled = Math.abs(this.x - this.startX);
+      if (traveled >= this.maxDistance) {
+        this.active = false;
+        return;
+      }
+    }
 
     // Check lifetime
     if (Date.now() - this.createdAt > this.lifetime) {
