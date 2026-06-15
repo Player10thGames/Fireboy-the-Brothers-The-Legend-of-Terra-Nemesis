@@ -5,6 +5,7 @@
 
 import { Boss, BossConfig } from '../Boss';
 import { Projectile } from '../Projectile';
+import { createLinearRow, createFanSpread } from '../ProjectilePatterns';
 
 export class DoubleMechaRocket extends Boss {
   private movementDirection = 1;
@@ -17,87 +18,31 @@ export class DoubleMechaRocket extends Boss {
     this.attackCooldown = 300;
   }
 
-  /**
-   * Generate attack projectiles based on pattern
-   */
   generateAttack(currentTime: number): Projectile[] {
-    const attacks: Projectile[] = [];
     const center = this.getCenter();
+    const origin = { x: center.x, y: center.y, damage: this.stats.damage };
 
     switch (this.patternIndex) {
       case 0:
-        // Horizontal laser beams (3 waves)
-        for (let i = 0; i < 3; i++) {
-          attacks.push(
-            new Projectile({
-              x: center.x - 4,
-              y: center.y + i * 20 - 20,
-              vx: -4,
-              vy: 0,
-              damage: this.stats.damage,
-              owner: 'boss',
-            })
-          );
-        }
-        break;
+        return createLinearRow(origin, 3, 20, -4);
 
       case 1:
-        // Fire breath spray (left to right)
-        for (let i = 0; i < 5; i++) {
-          const angle = (Math.PI / 4) * (i - 2) / 2;
-          attacks.push(
-            new Projectile({
-              x: center.x - 4,
-              y: center.y - 4,
-              vx: -3 * Math.cos(angle),
-              vy: -3 * Math.sin(angle),
-              damage: this.stats.damage,
-              owner: 'boss',
-            })
-          );
-        }
-        break;
+        return createFanSpread(origin, 5, 3, Math.PI / 4, Math.PI);
 
       case 2:
-        // Combination attack (both simultaneously)
-        for (let i = 0; i < 3; i++) {
-          attacks.push(
-            new Projectile({
-              x: center.x - 4,
-              y: center.y + i * 20 - 20,
-              vx: -4,
-              vy: 0,
-              damage: this.stats.damage,
-              owner: 'boss',
-            })
-          );
-        }
-        for (let i = 0; i < 3; i++) {
-          const angle = (Math.PI / 6) * (i - 1);
-          attacks.push(
-            new Projectile({
-              x: center.x - 4,
-              y: center.y - 4,
-              vx: -3 * Math.cos(angle),
-              vy: -3 * Math.sin(angle),
-              damage: this.stats.damage,
-              owner: 'boss',
-            })
-          );
-        }
-        break;
-    }
+        return [
+          ...createLinearRow(origin, 3, 20, -4),
+          ...createFanSpread(origin, 3, 3, Math.PI / 3, Math.PI),
+        ];
 
-    return attacks;
+      default:
+        return [];
+    }
   }
 
-  /**
-   * Update boss movement
-   */
   update(deltaTime: number): void {
     super.update(deltaTime);
 
-    // Oscillating movement
     this.movementTimer += deltaTime * 1000;
     if (this.movementTimer > 1000) {
       this.movementTimer = 0;

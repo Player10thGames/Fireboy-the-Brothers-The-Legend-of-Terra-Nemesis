@@ -4,6 +4,7 @@
 
 import { GameObject } from '@/engine/GameEngine';
 import { Rect } from '@/engine/Collision';
+import { SCREEN_WIDTH, SCREEN_HEIGHT } from '@/engine/constants';
 
 export interface ProjectileConfig {
   x: number;
@@ -16,6 +17,8 @@ export interface ProjectileConfig {
   height?: number;
 }
 
+const OFFSCREEN_MARGIN = 50;
+
 export class Projectile implements GameObject {
   x: number;
   y: number;
@@ -27,7 +30,7 @@ export class Projectile implements GameObject {
 
   private damage: number;
   private owner: 'player' | 'boss';
-  private lifetime = 5000; // 5 seconds
+  private lifetime = 5000;
   private createdAt = Date.now();
   private color: string;
 
@@ -43,38 +46,28 @@ export class Projectile implements GameObject {
     this.color = config.owner === 'player' ? '#FFD700' : '#FF6B6B';
   }
 
-  /**
-   * Update projectile
-   */
   update(deltaTime: number): void {
-    // Move projectile
     this.x += this.vx * deltaTime * 60;
     this.y += this.vy * deltaTime * 60;
 
-    // Check lifetime
     if (Date.now() - this.createdAt > this.lifetime) {
       this.active = false;
     }
 
-    // Check bounds (remove if off screen)
     if (
-      this.x < -50 ||
-      this.x > 850 ||
-      this.y < -50 ||
-      this.y > 650
+      this.x < -OFFSCREEN_MARGIN ||
+      this.x > SCREEN_WIDTH + OFFSCREEN_MARGIN ||
+      this.y < -OFFSCREEN_MARGIN ||
+      this.y > SCREEN_HEIGHT + OFFSCREEN_MARGIN
     ) {
       this.active = false;
     }
   }
 
-  /**
-   * Render projectile
-   */
   render(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = this.color;
     ctx.fillRect(this.x, this.y, this.width, this.height);
 
-    // Add glow effect
     ctx.strokeStyle = this.color;
     ctx.lineWidth = 1;
     ctx.globalAlpha = 0.5;
@@ -82,39 +75,19 @@ export class Projectile implements GameObject {
     ctx.globalAlpha = 1;
   }
 
-  /**
-   * Get projectile bounds
-   */
   getBounds(): Rect {
-    return {
-      x: this.x,
-      y: this.y,
-      width: this.width,
-      height: this.height,
-    };
+    return { x: this.x, y: this.y, width: this.width, height: this.height };
   }
 
-  /**
-   * Get damage
-   */
+  getCenter(): { x: number; y: number } {
+    return { x: this.x + this.width / 2, y: this.y + this.height / 2 };
+  }
+
   getDamage(): number {
     return this.damage;
   }
 
-  /**
-   * Get owner
-   */
   getOwner(): 'player' | 'boss' {
     return this.owner;
-  }
-
-  /**
-   * Get center position
-   */
-  getCenter(): { x: number; y: number } {
-    return {
-      x: this.x + this.width / 2,
-      y: this.y + this.height / 2,
-    };
   }
 }

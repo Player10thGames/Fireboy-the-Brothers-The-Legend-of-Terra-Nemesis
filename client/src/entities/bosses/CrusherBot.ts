@@ -5,6 +5,7 @@
 
 import { Boss, BossConfig } from '../Boss';
 import { Projectile } from '../Projectile';
+import { createLinearRow } from '../ProjectilePatterns';
 
 export class CrusherBot extends Boss {
   private stompTimer = 0;
@@ -16,91 +17,53 @@ export class CrusherBot extends Boss {
     this.attackCooldown = 400;
   }
 
-  /**
-   * Generate attack projectiles based on pattern
-   */
   generateAttack(currentTime: number): Projectile[] {
-    const attacks: Projectile[] = [];
     const center = this.getCenter();
+    const origin = { x: center.x, y: center.y, damage: this.stats.damage };
 
     switch (this.patternIndex) {
       case 0:
-        // Heavy stomp (creates shockwave)
-        for (let i = 0; i < 5; i++) {
-          attacks.push(
-            new Projectile({
-              x: center.x - 4,
-              y: center.y - 4,
-              vx: -3 + i * 1.5,
-              vy: 2,
-              damage: this.stats.damage,
-              owner: 'boss',
-            })
-          );
-        }
-        break;
+        return this.createStompWave(center);
 
       case 1:
-        // Missile barrage
-        for (let i = 0; i < 4; i++) {
-          attacks.push(
-            new Projectile({
-              x: center.x - 4,
-              y: center.y + i * 25 - 40,
-              vx: -4,
-              vy: 0,
-              damage: this.stats.damage,
-              owner: 'boss',
-            })
-          );
-        }
-        break;
+        return createLinearRow(origin, 4, 25, -4);
 
       case 2:
-        // Combination stomp + missiles
-        for (let i = 0; i < 3; i++) {
-          attacks.push(
-            new Projectile({
-              x: center.x - 4,
-              y: center.y - 4,
-              vx: -3 + i * 1.5,
-              vy: 2,
-              damage: this.stats.damage,
-              owner: 'boss',
-            })
-          );
-        }
-        for (let i = 0; i < 3; i++) {
-          attacks.push(
-            new Projectile({
-              x: center.x - 4,
-              y: center.y + i * 20 - 20,
-              vx: -4,
-              vy: 0,
-              damage: this.stats.damage,
-              owner: 'boss',
-            })
-          );
-        }
-        break;
-    }
+        return [
+          ...this.createStompWave(center),
+          ...createLinearRow(origin, 3, 20, -4),
+        ];
 
+      default:
+        return [];
+    }
+  }
+
+  private createStompWave(center: { x: number; y: number }): Projectile[] {
+    const attacks: Projectile[] = [];
+    for (let i = 0; i < 5; i++) {
+      attacks.push(
+        new Projectile({
+          x: center.x - 4,
+          y: center.y - 4,
+          vx: -3 + i * 1.5,
+          vy: 2,
+          damage: this.stats.damage,
+          owner: 'boss',
+        }),
+      );
+    }
     return attacks;
   }
 
-  /**
-   * Update boss movement
-   */
   update(deltaTime: number): void {
     super.update(deltaTime);
 
-    // Slow, heavy movement
     this.stompTimer += deltaTime * 1000;
     if (this.stompTimer > 2000) {
       this.stompTimer = 0;
     }
 
-    // Move up and down slowly
     if (this.y < 150) {
       this.vy = 0.5;
     } else if (this.y > 350) {

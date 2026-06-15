@@ -5,6 +5,7 @@
 
 import { Boss, BossConfig } from '../Boss';
 import { Projectile } from '../Projectile';
+import { createLinearRow, createRadialBurst, createFanSpread } from '../ProjectilePatterns';
 
 export class RoaringKnight extends Boss {
   private phase = 1;
@@ -17,75 +18,28 @@ export class RoaringKnight extends Boss {
     this.attackCooldown = 350;
   }
 
-  /**
-   * Generate attack projectiles based on pattern
-   */
   generateAttack(currentTime: number): Projectile[] {
-    const attacks: Projectile[] = [];
     const center = this.getCenter();
+    const origin = { x: center.x, y: center.y, damage: this.stats.damage };
 
     switch (this.patternIndex) {
       case 0:
-        // Sword slash (melee range)
-        for (let i = 0; i < 3; i++) {
-          attacks.push(
-            new Projectile({
-              x: center.x - 4,
-              y: center.y + i * 15 - 15,
-              vx: -3,
-              vy: 0,
-              damage: this.stats.damage,
-              owner: 'boss',
-            })
-          );
-        }
-        break;
+        return createLinearRow(origin, 3, 15, -3);
 
       case 1:
-        // Energy wave projection
-        for (let i = 0; i < 5; i++) {
-          const angle = (Math.PI / 4) * (i - 2) / 2;
-          attacks.push(
-            new Projectile({
-              x: center.x - 4,
-              y: center.y - 4,
-              vx: -3.5 * Math.cos(angle),
-              vy: -3.5 * Math.sin(angle),
-              damage: this.stats.damage,
-              owner: 'boss',
-            })
-          );
-        }
-        break;
+        return createFanSpread(origin, 5, 3.5, Math.PI / 4, Math.PI);
 
       case 2:
-        // Phase transition attack (all directions)
-        for (let i = 0; i < 6; i++) {
-          const angle = (Math.PI * 2 * i) / 6;
-          attacks.push(
-            new Projectile({
-              x: center.x - 4,
-              y: center.y - 4,
-              vx: 3 * Math.cos(angle),
-              vy: 3 * Math.sin(angle),
-              damage: this.stats.damage,
-              owner: 'boss',
-            })
-          );
-        }
-        break;
-    }
+        return createRadialBurst(origin, 6, 3);
 
-    return attacks;
+      default:
+        return [];
+    }
   }
 
-  /**
-   * Update boss movement and phases
-   */
   update(deltaTime: number): void {
     this.phaseChangeTimer += deltaTime * 1000;
 
-    // Phase changes at health thresholds
     const healthPercent = (this.stats.health / this.stats.maxHealth) * 100;
     if (healthPercent < 75 && this.phase === 1) {
       this.phase = 2;
@@ -100,15 +54,11 @@ export class RoaringKnight extends Boss {
 
     super.update(deltaTime);
 
-    // Aggressive movement in later phases
     const time = Date.now() / 1000;
     this.vx = Math.sin(time * this.phase) * 1.5;
     this.vy = Math.cos(time * this.phase) * 1.5;
   }
 
-  /**
-   * Get current phase
-   */
   getPhase(): number {
     return this.phase;
   }

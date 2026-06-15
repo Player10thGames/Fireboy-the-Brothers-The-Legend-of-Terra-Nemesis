@@ -13,6 +13,7 @@ import { BossFactory } from '@/entities/BossFactory';
 import HUD from './HUD';
 import TouchControls from './TouchControls';
 import { AssetLoader } from '@/lib/assetLoader';
+import { formatTime } from '@/lib/formatTime';
 import { Projectile } from '@/entities/Projectile';
 import { Collision } from '@/engine/Collision';
 import { getCharacter } from '@/entities/characters';
@@ -360,12 +361,7 @@ export default function GameCanvas({
     };
   }, [characterId, startStage, difficulty]);
 
-  const formatTime = (ms: number) => {
-    const m = Math.floor(ms / 60000);
-    const s = Math.floor((ms % 60000) / 1000);
-    const cs = Math.floor((ms % 1000) / 10);
-    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0') + '.' + String(cs).padStart(2, '0');
-  };
+
 
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen bg-black overflow-hidden">

@@ -8,7 +8,7 @@ import { RoaringKnight } from './bosses/RoaringKnight';
 import { RoaringMetal } from './bosses/RoaringMetal';
 
 export class BossFactory {
-  static createBoss(stage: number, config: BossConfig): Boss {
+  static createBoss(stage: number, config: Omit<BossConfig, 'stage'>): Boss {
     switch (stage) {
       case 1:
         return new DoubleMechaRocket({ ...config, stage: 1 });
