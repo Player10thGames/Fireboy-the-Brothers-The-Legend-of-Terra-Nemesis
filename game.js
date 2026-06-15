@@ -236,6 +236,7 @@ class InputManager {
     this.touch = { left: false, right: false, up: false, down: false, fire: false, jump: false, pause: false };
     this.justPressed = {};
     this.prevKeys = {};
+    this.keyDownBuffer = {};
     this.setupKeyboard();
     this.setupTouch();
   }
@@ -243,6 +244,7 @@ class InputManager {
   setupKeyboard() {
     window.addEventListener('keydown', (e) => {
       this.keys[e.code] = true;
+      this.keyDownBuffer[e.code] = true;
       e.preventDefault();
     });
     window.addEventListener('keyup', (e) => {
@@ -273,19 +275,20 @@ class InputManager {
 
   update() {
     for (const key in this.keys) {
-      this.justPressed[key] = this.keys[key] && !this.prevKeys[key];
+      this.justPressed[key] = this.keyDownBuffer[key] || (this.keys[key] && !this.prevKeys[key]);
     }
     this.prevKeys = { ...this.keys };
+    this.keyDownBuffer = {};
   }
 
   isLeft() { return this.keys['ArrowLeft'] || this.keys['KeyA'] || this.touch.left; }
   isRight() { return this.keys['ArrowRight'] || this.keys['KeyD'] || this.touch.right; }
   isUp() { return this.keys['ArrowUp'] || this.keys['KeyW'] || this.touch.up || this.touch.jump; }
   isDown() { return this.keys['ArrowDown'] || this.keys['KeyS'] || this.touch.down; }
-  isFire() { return this.keys['Space'] || this.keys['KeyZ'] || this.touch.fire; }
+  isFire() { return this.keys['Space'] || this.keys['KeyZ'] || this.justPressed['Space'] || this.justPressed['KeyZ'] || this.touch.fire; }
   isJump() { return this.keys['ArrowUp'] || this.keys['KeyW'] || this.keys['KeyX'] || this.touch.up || this.touch.jump; }
   isPause() { return this.justPressed['KeyP'] || this.justPressed['Escape'] || this.touch.pause; }
-  isAnyKey() { return Object.values(this.keys).some(v => v) || Object.values(this.touch).some(v => v); }
+  isAnyKey() { return Object.values(this.keys).some(v => v) || Object.values(this.justPressed).some(v => v) || Object.values(this.touch).some(v => v); }
 }
 
 // ==================== PARTICLE SYSTEM ====================
