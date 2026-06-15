@@ -392,7 +392,7 @@ class Player {
     this.animTimer = 0;
   }
 
-  update(input, now) {
+  update(input, now, homingTarget) {
     // Movement
     this.vx = 0;
     if (input.isLeft()) { this.vx = -this.speed; this.facing = -1; }
@@ -428,7 +428,7 @@ class Player {
 
     // Update projectiles
     this.projectiles = this.projectiles.filter(p => p.active);
-    this.projectiles.forEach(p => p.update());
+    this.projectiles.forEach(p => p.update(homingTarget));
 
     // Invincibility timer
     if (this.invincible > 0) this.invincible--;
@@ -1030,7 +1030,7 @@ class GimmickManager {
       }
       if (e.type === 'speed' && e.timer > 0) {
         if (player.x > e.x && player.x < e.x + 100) {
-          player.vx += 2;
+          player.x += 2;
         }
       }
       return e.timer > 0;
@@ -1177,15 +1177,14 @@ class Game {
         }
         break;
       case GameState.PAUSED:
-        if (this.input.isPause()) {
-          this.resumeGame();
-        }
         break;
     }
 
-    // Pause check during play
+    // Pause/unpause toggle (mutually exclusive in one frame)
     if (this.state === GameState.PLAYING && this.input.isPause()) {
       this.pauseGame();
+    } else if (this.state === GameState.PAUSED && this.input.isPause()) {
+      this.resumeGame();
     }
 
     // Update particles
@@ -1198,7 +1197,7 @@ class Game {
   updatePlaying(dt, now) {
     if (!this.player || !this.boss) return;
 
-    this.player.update(this.input, now);
+    this.player.update(this.input, now, this.boss);
     this.boss.update(this.player);
 
     // Gimmicks
@@ -1295,7 +1294,7 @@ class Game {
     if (this.cutsceneType === 'before') {
       this.startBossWarning();
     } else {
-      this.advanceStage();
+      this.advanceToNextStage();
     }
   }
 
@@ -1351,9 +1350,13 @@ class Game {
     if (this.currentStage >= STAGES.length - 1) {
       this.showVictory();
     } else {
-      this.currentStage++;
-      this.showCutscene('before');
+      this.showCutscene('after');
     }
+  }
+
+  advanceToNextStage() {
+    this.currentStage++;
+    this.showCutscene('before');
   }
 
   showVictory() {
