@@ -1114,6 +1114,9 @@ class Game {
     this.cutsceneOverlay = document.getElementById('cutscene-overlay');
     this.timeAttackTimer = document.getElementById('time-attack-timer');
 
+    // Show initial menu
+    this.renderMenu();
+
     // Start game loop
     this.lastTime = performance.now();
     this.loop();
