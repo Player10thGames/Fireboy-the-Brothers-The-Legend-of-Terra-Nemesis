@@ -986,6 +986,7 @@
       this.enraged = false;
       this.bobAmp = 38;
       this.entering = true;
+      this.dead = false;
     }
     center() {
       return { x: this.x + this.w / 2, y: this.y + this.h / 2 };
@@ -1099,11 +1100,12 @@
     }
 
     hurt(amt) {
-      if (this.invuln > 0 || this.entering || G.warmup > 0) return;
+      if (this.dead || this.invuln > 0 || this.entering || G.warmup > 0) return;
       this.hp -= amt;
       this.hitFlash = 0.08;
       if (this.hp <= 0) {
         this.hp = 0;
+        this.dead = true;
         onBossDead();
       }
     }
