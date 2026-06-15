@@ -8,8 +8,10 @@ import { InputManager } from '@/engine/InputManager';
 import { AudioManager } from '@/engine/AudioManager';
 import { GameStateManager } from '@/engine/GameState';
 import { Player } from '@/entities/Player';
-import { Boss } from '@/entities/Boss';
-import { BossFactory } from '@/entities/BossFactory';
+import { Boss, BossConfig } from '@/entities/Boss';
+import { CutsceneManager } from '@/engine/CutsceneManager';
+import { CUTSCENES, CutsceneFrame } from '@/engine/Cutscene';
+
 import HUD from './HUD';
 import TouchControls from './TouchControls';
 import { AssetLoader } from '@/lib/assetLoader';
@@ -17,6 +19,8 @@ import { Projectile } from '@/entities/Projectile';
 import { Collision } from '@/engine/Collision';
 import { getCharacter } from '@/entities/characters';
 import { getBoss } from '@/entities/bosses';
+import { BossFactory } from '@/entities/BossFactory';
+
 import {
   MovingPlatformsGimmick,
   GravityShiftGimmick,
@@ -70,6 +74,7 @@ export default function GameCanvas({
   const gameEngineRef = useRef<GameEngine | null>(null);
   const inputManagerRef = useRef<InputManager | null>(null);
   const audioManagerRef = useRef<AudioManager | null>(null);
+  const cutsceneManagerRef = useRef<CutsceneManager | null>(null);
   const gameStateRef = useRef<GameStateManager | null>(null);
   const playerRef = useRef<Player | null>(null);
   const bossRef = useRef<Boss | null>(null);
@@ -84,6 +89,8 @@ export default function GameCanvas({
   const [gameState, setGameState] = useState<any>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
+  const [showCutscene, setShowCutscene] = useState(false);
+  const [currentCutsceneFrame, setCurrentCutsceneFrame] = useState<CutsceneFrame | null>(null);
   const [showTransition, setShowTransition] = useState(false);
   const [currentBossName, setCurrentBossName] = useState('');
   const [currentStageNum, setCurrentStageNum] = useState(startStage);
@@ -128,6 +135,23 @@ export default function GameCanvas({
     inputManagerRef.current = inputManager;
     audioManagerRef.current = audioManager;
     gameStateRef.current = gameState;
+    cutsceneManagerRef.current = new CutsceneManager(audioManager, {
+      onCutsceneEnd: () => {
+        setShowCutscene(false);
+        setCurrentCutsceneFrame(null);
+        gameEngine.start();
+        audioManager.resumeMusic();
+      },
+      onDisplayFrame: (frame) => {
+        setShowCutscene(true);
+        setCurrentCutsceneFrame(frame);
+      },
+      onHideCutscene: () => {
+        setShowCutscene(false);
+        setCurrentCutsceneFrame(null);
+      },
+    });
+
 
     if (options.masterVolume !== undefined) audioManager.setMasterVolume(options.masterVolume / 100);
     if (options.musicVolume !== undefined) audioManager.setMusicVolume(options.musicVolume / 100);
@@ -174,6 +198,7 @@ export default function GameCanvas({
         y: 180,
         width: 80,
         height: 80,
+        stage: stageNum,
         stats: adjustedStats,
         name: bossDef.name,
       });
@@ -191,7 +216,14 @@ export default function GameCanvas({
         audioManager.playSFX(AssetLoader.getSFX('bossWarning'));
         setTimeout(() => setShowWarning(false), 2500);
       }, 2000);
-      audioManager.playMusic(AssetLoader.getMusic('bossBattle'), true);
+      // Check for intro cutscene for the stage
+      const introCutscene = CUTSCENES.find(c => c.id === `intro_stage${stageNum}`);
+      if (introCutscene && cutsceneManagerRef.current) {
+        cutsceneManagerRef.current.playCutscene(introCutscene);
+      } else {
+        audioManager.playMusic(AssetLoader.getMusic("bossBattle"), true);
+        gameEngine.start();
+      }
     };
 
     // Override render to add background + gimmick + FPS
@@ -242,7 +274,6 @@ export default function GameCanvas({
     };
 
     loadBoss(startStage);
-    gameEngine.start();
 
     const gameLoopInterval = setInterval(() => {
       const player = playerRef.current;
@@ -369,6 +400,56 @@ export default function GameCanvas({
 
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen bg-black overflow-hidden">
+      {showCutscene && currentCutsceneFrame && (
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-90 z-50 p-4"
+          style={{ fontFamily: "'Press Start 2P', 'Courier New', monospace" }}
+        >
+          {currentCutsceneFrame.background && (
+            <img
+              src={AssetLoader.getImage(currentCutsceneFrame.background)}
+              alt="background"
+              className="absolute inset-0 w-full h-full object-cover opacity-50"
+            />
+          )}
+          <div className="relative z-10 w-full max-w-3xl bg-gray-900 bg-opacity-80 border-2 border-yellow-400 p-6 rounded-lg shadow-lg">
+            {currentCutsceneFrame.characterLeft && (
+              <img
+                src={AssetLoader.getImage(currentCutsceneFrame.characterLeft)}
+                alt="character left"
+                className="absolute left-0 bottom-0 h-48 -ml-12"
+              />
+            )}
+            {currentCutsceneFrame.characterRight && (
+              <img
+                src={AssetLoader.getImage(currentCutsceneFrame.characterRight)}
+                alt="character right"
+                className="absolute right-0 bottom-0 h-48 -mr-12"
+              />
+            )}
+            {currentCutsceneFrame.speaker && (
+              <div className="text-yellow-400 text-lg mb-2">{currentCutsceneFrame.speaker}:</div>
+            )}
+            <div className="text-white text-md leading-relaxed mb-4">
+              {currentCutsceneFrame.text}
+            </div>
+            <div className="flex justify-between">
+              <button
+                onClick={() => cutsceneManagerRef.current?.nextFrame()}
+                className="px-4 py-2 bg-yellow-500 text-black font-bold rounded hover:bg-yellow-400 transition-colors"
+              >
+                NEXT
+              </button>
+              <button
+                onClick={() => cutsceneManagerRef.current?.skipCutscene()}
+                className="px-4 py-2 bg-gray-700 text-white font-bold rounded hover:bg-gray-600 transition-colors"
+              >
+                SKIP
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="relative">
         <canvas
           ref={canvasRef}
