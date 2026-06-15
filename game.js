@@ -1,15 +1,18 @@
 /**
  * FIREBOY THE BROTHERS - THE LEGEND OF TERRA NEMESIS
- * Boss Rush Mode - Complete Game Engine
+ * Boss Rush Mode v2.0 - Enhanced Game Engine
+ * Features: 4 Characters, 7 Stages, Cutscenes, Gimmicks, Touch Controls
  */
 
 // ==================== CONSTANTS ====================
 const CANVAS_W = 960;
 const CANVAS_H = 540;
-const GRAVITY = 0.6;
+const GRAVITY = 0.55;
 const GROUND_Y = CANVAS_H - 80;
+const FPS = 60;
+const FRAME_TIME = 1000 / FPS;
 
-// ==================== GAME STATE ====================
+// ==================== GAME STATES ====================
 const GameState = {
   MENU: 'menu',
   CHAR_SELECT: 'charSelect',
@@ -31,58 +34,82 @@ const CHARACTERS = {
   fireboy: {
     id: 'fireboy',
     name: 'Fireboy',
-    description: 'Balanced fighter with rapid fire',
+    description: 'Balanced fighter with rapid fire ability',
     color: '#FF6B6B',
+    accentColor: '#FF4500',
     hp: 100,
     speed: 5,
-    jumpPower: 12,
+    jumpPower: 13,
     damage: 15,
     fireRate: 150,
     projectileSpeed: 10,
     projectileColor: '#FF4500',
-    special: 'rapid'
+    special: 'rapid',
+    sprite: {
+      body: '#FF6B6B',
+      hair: '#FF4500',
+      outline: '#CC3300'
+    }
   },
   caroline: {
     id: 'caroline',
     name: 'Caroline',
-    description: 'Energy blaster, wide spread',
+    description: 'Energy blaster with wide spread attack',
     color: '#FF69B4',
+    accentColor: '#FF1493',
     hp: 90,
     speed: 6,
-    jumpPower: 13,
+    jumpPower: 14,
     damage: 12,
     fireRate: 200,
     projectileSpeed: 8,
     projectileColor: '#FF69B4',
-    special: 'spread'
+    special: 'spread',
+    sprite: {
+      body: '#FF69B4',
+      hair: '#FFB6C1',
+      outline: '#C71585'
+    }
   },
   butch: {
     id: 'butch',
     name: 'Butch',
-    description: 'Heavy hitter, powerful melee',
-    color: '#DC143C',
+    description: 'Heavy hitter with powerful melee attacks',
+    color: '#228B22',
+    accentColor: '#32CD32',
     hp: 120,
     speed: 4,
-    jumpPower: 10,
+    jumpPower: 11,
     damage: 25,
     fireRate: 350,
     projectileSpeed: 7,
-    projectileColor: '#DC143C',
-    special: 'power'
+    projectileColor: '#32CD32',
+    special: 'power',
+    sprite: {
+      body: '#228B22',
+      hair: '#006400',
+      outline: '#004400'
+    }
   },
   anabel: {
     id: 'anabel',
     name: 'Anabel',
-    description: 'Precision shooter, homing shots',
+    description: 'Precision shooter with homing projectiles',
     color: '#4169E1',
+    accentColor: '#00BFFF',
     hp: 85,
     speed: 7,
     jumpPower: 14,
     damage: 10,
-    fireRate: 100,
+    fireRate: 120,
     projectileSpeed: 9,
-    projectileColor: '#4169E1',
-    special: 'homing'
+    projectileColor: '#00BFFF',
+    special: 'homing',
+    sprite: {
+      body: '#4169E1',
+      hair: '#87CEEB',
+      outline: '#191970'
+    }
   }
 };
 
@@ -92,78 +119,161 @@ const STAGES = [
     id: 1,
     name: 'Duo Mecha Rocket',
     boss: 'Big Core MK.I & Fire Breath',
+    bossSubtitle: 'from Gradius & Sonic 3',
     bossColor: '#FF4500',
-    hp: 400,
+    bossAccent: '#FF8C00',
+    hp: 450,
     music: 'Double Trouble (Double Mecha Rocket - Big Core MK.I from Gradius x Fire Breath from Sonic 3) (Stage 1 Boss).mp3',
     gimmick: 'laser_walls',
-    cutsceneBefore: 'The mechanical terrors have awakened! Big Core MK.I and Fire Breath combine their forces!',
-    cutsceneAfter: 'The Duo Mecha Rocket is destroyed! But more enemies await...'
+    bgColor: '#0a0a2a',
+    bgAccent: '#1a0a3a',
+    cutsceneBefore: [
+      { speaker: 'System', text: 'WARNING: Hostile signatures detected ahead!' },
+      { speaker: 'Fireboy', text: 'Those machines... Big Core and Fire Breath have combined their power!' },
+      { speaker: 'System', text: 'Initiating combat sequence. Good luck!' }
+    ],
+    cutsceneAfter: [
+      { speaker: 'System', text: 'Enemy neutralized. Scanning for next target...' },
+      { speaker: 'Fireboy', text: 'That was just the beginning. More enemies await!' }
+    ]
   },
   {
     id: 2,
     name: 'Butch (Rowdyruff Boys)',
     boss: 'Butch',
+    bossSubtitle: 'from Rowdyruff Boys',
     bossColor: '#228B22',
-    hp: 500,
+    bossAccent: '#32CD32',
+    hp: 550,
     music: 'Butch from Rowdyruff Boys (Stage 2 Boss).mp3',
     gimmick: 'destructible_blocks',
-    cutsceneBefore: 'Butch of the Rowdyruff Boys stands in your way! He won\'t go down easy!',
-    cutsceneAfter: 'Butch has been defeated! His strength was no match for your resolve!'
+    bgColor: '#0a1a0a',
+    bgAccent: '#1a2a0a',
+    cutsceneBefore: [
+      { speaker: 'Butch (Boss)', text: 'Ha! You think you can take ME on?!' },
+      { speaker: 'Fireboy', text: 'Butch of the Rowdyruff Boys... Bring it on!' },
+      { speaker: 'Butch (Boss)', text: 'I\'ll crush you with my bare fists!' }
+    ],
+    cutsceneAfter: [
+      { speaker: 'Butch (Boss)', text: 'No way... I lost?!' },
+      { speaker: 'Fireboy', text: 'Your strength wasn\'t enough. Now step aside!' }
+    ]
   },
   {
     id: 3,
     name: 'Mandler (Terra Cresta)',
     boss: 'Mandler',
+    bossSubtitle: 'from Terra Cresta',
     bossColor: '#9932CC',
-    hp: 600,
+    bossAccent: '#BA55D3',
+    hp: 650,
     music: '13 Last Evil [Boss Battle].mp3',
     gimmick: 'gravity_shift',
-    cutsceneBefore: 'Mandler from Terra Cresta descends from the cosmos! Gravity itself bends to his will!',
-    cutsceneAfter: 'Mandler crumbles! The gravity distortions fade away...'
+    bgColor: '#1a0a2a',
+    bgAccent: '#2a0a3a',
+    cutsceneBefore: [
+      { speaker: 'System', text: 'Cosmic entity detected! Gravity anomalies increasing!' },
+      { speaker: 'Mandler', text: 'I am Mandler... commander of cosmic forces!' },
+      { speaker: 'Fireboy', text: 'Gravity manipulation won\'t stop me!' }
+    ],
+    cutsceneAfter: [
+      { speaker: 'Mandler', text: 'Impossible... my gravitational control... shattered...' },
+      { speaker: 'Fireboy', text: 'The gravity distortions are fading. Onward!' }
+    ]
   },
   {
     id: 4,
     name: 'Crusher-Bot MK.II',
     boss: 'Crusher-Bot MK.II',
+    bossSubtitle: 'Heavy Assault Mech',
     bossColor: '#708090',
-    hp: 700,
+    bossAccent: '#A9A9A9',
+    hp: 750,
     music: '13 Last Evil [Boss Battle].mp3',
     gimmick: 'falling_debris',
-    cutsceneBefore: 'Crusher-Bot MK.II activates! Its massive frame shakes the ground!',
-    cutsceneAfter: 'Crusher-Bot MK.II explodes into scrap! The way forward is clear!'
+    bgColor: '#1a1a1a',
+    bgAccent: '#2a2a2a',
+    cutsceneBefore: [
+      { speaker: 'System', text: 'ALERT: Massive mech signature! Ground tremors detected!' },
+      { speaker: 'Crusher-Bot', text: '[SYSTEMS ONLINE] TARGET ACQUIRED. INITIATING CRUSH PROTOCOL.' },
+      { speaker: 'Fireboy', text: 'That thing is massive! I have to be careful of its stomp attacks!' }
+    ],
+    cutsceneAfter: [
+      { speaker: 'Crusher-Bot', text: '[CRITICAL FAILURE] SYSTEMS... SHUTTING... DOWN...' },
+      { speaker: 'Fireboy', text: 'The scrap heap is clear. What else awaits?' }
+    ]
   },
   {
     id: 5,
     name: 'Metal Sonic',
     boss: 'Metal Sonic',
+    bossSubtitle: 'from Sonic Series',
     bossColor: '#1E90FF',
-    hp: 800,
+    bossAccent: '#4169E1',
+    hp: 850,
     music: 'Metal Sonic (Stage 5 Boss).mp3',
     gimmick: 'speed_zones',
-    cutsceneBefore: 'Metal Sonic appears in a flash of blue light! His speed is unmatched!',
-    cutsceneAfter: 'Metal Sonic sparks and collapses! But this isn\'t over yet...'
+    bgColor: '#0a0a2a',
+    bgAccent: '#0a1a3a',
+    cutsceneBefore: [
+      { speaker: 'System', text: 'EXTREME VELOCITY SIGNATURE! Speed exceeds measurement!' },
+      { speaker: 'Metal Sonic', text: '... I AM THE REAL SONIC. ALL OTHERS ARE INFERIOR.' },
+      { speaker: 'Fireboy', text: 'Metal Sonic?! His speed is incredible... Focus!' }
+    ],
+    cutsceneAfter: [
+      { speaker: 'Metal Sonic', text: 'THIS... CANNOT... BE...' },
+      { speaker: 'System', text: 'Warning: Two more powerful signatures ahead. Prepare yourself!' }
+    ]
   },
   {
     id: 6,
     name: 'Roaring Knight (Finale)',
-    boss: 'Roaring Knight',
+    boss: 'The Roaring Knight',
+    bossSubtitle: 'from Deltarune',
     bossColor: '#FFD700',
-    hp: 1000,
+    bossAccent: '#FFA500',
+    hp: 1100,
     music: '13 Last Evil [Boss Battle].mp3',
     gimmick: 'phase_shift',
-    cutsceneBefore: 'The Roaring Knight emerges from the shadows of Deltarune! Prepare for the final battle!',
-    cutsceneAfter: 'The Roaring Knight kneels... but a dark energy stirs behind it!'
+    bgColor: '#1a1a0a',
+    bgAccent: '#2a2a0a',
+    cutsceneBefore: [
+      { speaker: 'System', text: 'FINAL BOSS DETECTED! Power level: EXTREME!' },
+      { speaker: 'Roaring Knight', text: 'You have come far, warrior. But this is where your journey ends!' },
+      { speaker: 'Fireboy', text: 'The Roaring Knight from Deltarune... This is the final battle!' },
+      { speaker: 'Roaring Knight', text: 'Draw your weapon. LET US CLASH!' }
+    ],
+    cutsceneAfter: [
+      { speaker: 'Roaring Knight', text: 'You... are worthy. But...' },
+      { speaker: 'System', text: 'DANGER! Dark energy is combining with another entity!' },
+      { speaker: 'Fireboy', text: 'What?! There\'s something even more powerful forming!' }
+    ]
   },
   {
     id: 7,
     name: 'Roaring Metal (True Finale)',
-    boss: 'Roaring Knight × Metal Sonic',
+    boss: 'Roaring Metal',
+    bossSubtitle: 'Roaring Knight × Metal Sonic',
     bossColor: '#FF1493',
-    hp: 1500,
+    bossAccent: '#8B008B',
+    hp: 1600,
     music: 'Roaring Metal - Roaring Knight x Metal Sonic (Stage 7 True Finale Boss).mp3',
     gimmick: 'enrage_all',
-    cutsceneBefore: 'The Roaring Knight and Metal Sonic fuse into ROARING METAL! This is the TRUE final battle!',
-    cutsceneAfter: 'ROARING METAL is vanquished! Peace returns to the world! YOU ARE THE CHAMPION!'
+    bgColor: '#1a0a0a',
+    bgAccent: '#2a0a1a',
+    cutsceneBefore: [
+      { speaker: 'System', text: 'TRUE FINAL BOSS! Power level: UNMEASURABLE!' },
+      { speaker: '???', text: 'The Knight\'s fury... combined with Metal\'s speed...' },
+      { speaker: 'Roaring Metal', text: 'WE ARE ROARING METAL! THE ULTIMATE FUSION!' },
+      { speaker: 'Fireboy', text: 'Both of them fused together?! This is the TRUE final battle!' },
+      { speaker: 'Roaring Metal', text: 'PREPARE TO BE ANNIHILATED!' }
+    ],
+    cutsceneAfter: [
+      { speaker: 'Roaring Metal', text: 'IMPOSSIBLE... OUR COMBINED MIGHT... DEFEATED?!' },
+      { speaker: 'System', text: 'All hostile signatures eliminated. Mission complete!' },
+      { speaker: 'Fireboy', text: 'We did it! Peace has been restored!' },
+      { speaker: 'System', text: 'CONGRATULATIONS! YOU ARE THE TRUE CHAMPION!' }
+    ]
   }
 ];
 
@@ -175,6 +285,39 @@ class AudioManager {
     this.musicVolume = 0.5;
     this.sfxVolume = 0.7;
     this.muted = false;
+    this.loadSounds();
+  }
+
+  loadSounds() {
+    const sfxFiles = {
+      laser: 'BigCore_Laser.wav',
+      bossDefeat: 'BossDefeat_Explosion.wav',
+      bossWarning: 'BossWarning.wav',
+      bossJump: 'Boss_Jump.wav',
+      butchHurt: 'Butch_BossHurt.wav',
+      butchFall: 'Butch_Fall.wav',
+      butchJump: 'Butch_Jump.wav',
+      crusherStomp: 'CrusherBot_Stomp.wav',
+      grind: 'Grind.wav',
+      hitBoss: 'HitBoss.wav',
+      impact: 'Impact.wav',
+      impact2: 'Impact2.wav',
+      jump: 'Jump.wav',
+      land: 'Land.wav',
+      move: 'Move.wav',
+      msCharge: 'MSChargeFire.wav',
+      msFireball: 'MSFireball.wav',
+      playerDeath: 'PlayerDeath.wav',
+      playerHurt: 'PlayerHurt.wav',
+      playerFire: 'Player_FireShoot.wav',
+      strain: 'Strain.wav',
+      strain2: 'Strain2.wav',
+      transform: 'Transform.wav',
+      alarm: 'fp2_alarm.ogg'
+    };
+    for (const [name, src] of Object.entries(sfxFiles)) {
+      this.loadSound(name, src);
+    }
   }
 
   loadSound(name, src) {
@@ -194,10 +337,7 @@ class AudioManager {
   }
 
   playMusic(src) {
-    if (this.music) {
-      this.music.pause();
-      this.music.currentTime = 0;
-    }
+    this.stopMusic();
     this.music = new Audio(src);
     this.music.loop = true;
     this.music.volume = this.musicVolume;
@@ -210,6 +350,7 @@ class AudioManager {
     if (this.music) {
       this.music.pause();
       this.music.currentTime = 0;
+      this.music = null;
     }
   }
 
@@ -257,12 +398,14 @@ class InputManager {
     const bind = (id, key) => {
       const el = document.getElementById(id);
       if (!el) return;
-      el.addEventListener('touchstart', (e) => { e.preventDefault(); this.touch[key] = true; });
-      el.addEventListener('touchend', (e) => { e.preventDefault(); this.touch[key] = false; });
-      el.addEventListener('touchcancel', (e) => { e.preventDefault(); this.touch[key] = false; });
-      el.addEventListener('mousedown', (e) => { e.preventDefault(); this.touch[key] = true; });
-      el.addEventListener('mouseup', (e) => { e.preventDefault(); this.touch[key] = false; });
-      el.addEventListener('mouseleave', (e) => { this.touch[key] = false; });
+      const start = (e) => { e.preventDefault(); this.touch[key] = true; this.keyDownBuffer[key + '_touch'] = true; };
+      const end = (e) => { e.preventDefault(); this.touch[key] = false; };
+      el.addEventListener('touchstart', start, { passive: false });
+      el.addEventListener('touchend', end, { passive: false });
+      el.addEventListener('touchcancel', end, { passive: false });
+      el.addEventListener('mousedown', start);
+      el.addEventListener('mouseup', end);
+      el.addEventListener('mouseleave', end);
     };
     bind('dpad-up', 'up');
     bind('dpad-down', 'down');
@@ -275,7 +418,12 @@ class InputManager {
 
   update() {
     for (const key in this.keys) {
-      this.justPressed[key] = this.keyDownBuffer[key] || (this.keys[key] && !this.prevKeys[key]);
+      this.justPressed[key] = this.keyDownBuffer[key] && !this.prevKeys[key];
+    }
+    for (const key in this.keyDownBuffer) {
+      if (key.endsWith('_touch')) {
+        this.justPressed[key] = true;
+      }
     }
     this.prevKeys = { ...this.keys };
     this.keyDownBuffer = {};
@@ -285,15 +433,15 @@ class InputManager {
   isRight() { return this.keys['ArrowRight'] || this.keys['KeyD'] || this.touch.right; }
   isUp() { return this.keys['ArrowUp'] || this.keys['KeyW'] || this.touch.up || this.touch.jump; }
   isDown() { return this.keys['ArrowDown'] || this.keys['KeyS'] || this.touch.down; }
-  isFire() { return this.keys['Space'] || this.keys['KeyZ'] || this.justPressed['Space'] || this.justPressed['KeyZ'] || this.touch.fire; }
-  isJump() { return this.keys['ArrowUp'] || this.keys['KeyW'] || this.keys['KeyX'] || this.touch.up || this.touch.jump; }
-  isPause() { return this.justPressed['KeyP'] || this.justPressed['Escape'] || this.touch.pause; }
-  isAnyKey() { return Object.values(this.keys).some(v => v) || Object.values(this.justPressed).some(v => v) || Object.values(this.touch).some(v => v); }
+  isFire() { return this.keys['Space'] || this.keys['KeyZ'] || this.touch.fire; }
+  isJump() { return this.justPressed['ArrowUp'] || this.justPressed['KeyW'] || this.justPressed['KeyX'] || this.justPressed['jump_touch']; }
+  isPause() { return this.justPressed['KeyP'] || this.justPressed['Escape'] || this.justPressed['pause_touch']; }
+  isAnyKey() { return Object.values(this.keys).some(v => v) || Object.values(this.touch).some(v => v); }
 }
 
 // ==================== PARTICLE SYSTEM ====================
 class Particle {
-  constructor(x, y, vx, vy, color, life) {
+  constructor(x, y, vx, vy, color, life, size) {
     this.x = x;
     this.y = y;
     this.vx = vx;
@@ -301,22 +449,55 @@ class Particle {
     this.color = color;
     this.life = life;
     this.maxLife = life;
-    this.size = 3 + Math.random() * 3;
+    this.size = size || (2 + Math.random() * 4);
+    this.rotation = Math.random() * Math.PI * 2;
+    this.rotSpeed = (Math.random() - 0.5) * 0.2;
   }
 
   update() {
     this.x += this.vx;
     this.y += this.vy;
-    this.vy += 0.1;
+    this.vy += 0.08;
+    this.vx *= 0.99;
     this.life--;
-    this.size *= 0.97;
+    this.size *= 0.98;
+    this.rotation += this.rotSpeed;
   }
 
   draw(ctx) {
     const alpha = this.life / this.maxLife;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotation);
+    ctx.fillStyle = this.color;
+    ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+    ctx.restore();
+  }
+
+  isDead() { return this.life <= 0 || this.size < 0.5; }
+}
+
+// ==================== TRAIL EFFECT ====================
+class Trail {
+  constructor(x, y, color, size) {
+    this.x = x;
+    this.y = y;
+    this.color = color;
+    this.size = size;
+    this.life = 15;
+    this.maxLife = 15;
+  }
+
+  update() { this.life--; }
+
+  draw(ctx) {
+    const alpha = (this.life / this.maxLife) * 0.4;
     ctx.globalAlpha = alpha;
     ctx.fillStyle = this.color;
-    ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size * (this.life / this.maxLife), 0, Math.PI * 2);
+    ctx.fill();
     ctx.globalAlpha = 1;
   }
 
@@ -336,37 +517,68 @@ class Projectile {
     this.width = width || 12;
     this.height = height || 8;
     this.active = true;
+    this.homing = false;
+    this.trail = [];
+    this.age = 0;
   }
 
   update(target) {
+    this.age++;
     this.x += this.vx;
     this.y += this.vy;
-    if (this.x < -50 || this.x > CANVAS_W + 50 || this.y < -50 || this.y > CANVAS_H + 50) {
+
+    // Trail
+    if (this.age % 2 === 0) {
+      this.trail.push(new Trail(this.x + this.width / 2, this.y + this.height / 2, this.color, this.width / 3));
+    }
+    this.trail = this.trail.filter(t => { t.update(); return !t.isDead(); });
+
+    if (this.x < -60 || this.x > CANVAS_W + 60 || this.y < -60 || this.y > CANVAS_H + 60) {
       this.active = false;
     }
+
     // Homing behavior
-    if (this.homing && target) {
-      const dx = target.x + target.width / 2 - this.x;
-      const dy = target.y + target.height / 2 - this.y;
+    if (this.homing && target && this.age > 5) {
+      const tx = target.x + target.width / 2;
+      const ty = target.y + target.height / 2;
+      const dx = tx - this.x;
+      const dy = ty - this.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist > 0) {
-        this.vx += (dx / dist) * 0.3;
-        this.vy += (dy / dist) * 0.3;
+        this.vx += (dx / dist) * 0.4;
+        this.vy += (dy / dist) * 0.4;
         const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-        if (speed > 8) {
-          this.vx = (this.vx / speed) * 8;
-          this.vy = (this.vy / speed) * 8;
+        const maxSpeed = 9;
+        if (speed > maxSpeed) {
+          this.vx = (this.vx / speed) * maxSpeed;
+          this.vy = (this.vy / speed) * maxSpeed;
         }
       }
     }
   }
 
   draw(ctx) {
+    // Draw trail
+    this.trail.forEach(t => t.draw(ctx));
+
+    ctx.save();
     ctx.fillStyle = this.color;
-    ctx.shadowBlur = 6;
+    ctx.shadowBlur = 8;
     ctx.shadowColor = this.color;
-    ctx.fillRect(this.x, this.y, this.width, this.height);
-    ctx.shadowBlur = 0;
+
+    if (this.homing) {
+      // Circular homing projectile
+      ctx.beginPath();
+      ctx.arc(this.x + this.width / 2, this.y + this.height / 2, this.width / 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillRect(this.x, this.y, this.width, this.height);
+      // Bright core
+      ctx.fillStyle = '#fff';
+      ctx.globalAlpha = 0.6;
+      ctx.fillRect(this.x + 2, this.y + 2, this.width - 4, this.height - 4);
+    }
+    ctx.restore();
   }
 }
 
@@ -376,7 +588,7 @@ class Player {
     this.charDef = charDef;
     this.width = 48;
     this.height = 56;
-    this.x = 80;
+    this.x = 100;
     this.y = GROUND_Y - this.height;
     this.vx = 0;
     this.vy = 0;
@@ -393,6 +605,9 @@ class Player {
     this.projectiles = [];
     this.animFrame = 0;
     this.animTimer = 0;
+    this.runFrame = 0;
+    this.dashTrail = [];
+    this.hitFlash = 0;
   }
 
   update(input, now, homingTarget) {
@@ -401,7 +616,7 @@ class Player {
     if (input.isLeft()) { this.vx = -this.speed; this.facing = -1; }
     if (input.isRight()) { this.vx = this.speed; this.facing = 1; }
 
-    // Jump
+    // Jump (only on just-pressed to prevent continuous jumping)
     if (input.isJump() && this.onGround) {
       this.vy = -this.jumpPower;
       this.onGround = false;
@@ -421,11 +636,11 @@ class Player {
 
     // Boundaries
     this.x = Math.max(0, Math.min(this.x, CANVAS_W - this.width));
-    this.y = Math.max(0, Math.min(this.y, CANVAS_H - this.height));
+    this.y = Math.max(0, this.y);
 
     // Shooting
     if (input.isFire() && now - this.lastFire > this.fireRate) {
-      this.shoot();
+      this.shoot(homingTarget);
       this.lastFire = now;
     }
 
@@ -435,57 +650,51 @@ class Player {
 
     // Invincibility timer
     if (this.invincible > 0) this.invincible--;
+    if (this.hitFlash > 0) this.hitFlash--;
 
-    // Animation
-    this.animTimer++;
-    if (this.animTimer > 8) {
-      this.animTimer = 0;
-      this.animFrame = (this.animFrame + 1) % 4;
+    // Run animation
+    if (Math.abs(this.vx) > 0) {
+      this.animTimer++;
+      if (this.animTimer > 6) {
+        this.animTimer = 0;
+        this.runFrame = (this.runFrame + 1) % 4;
+      }
+    } else {
+      this.runFrame = 0;
     }
+
+    // Dash trail
+    if (Math.abs(this.vx) > 0) {
+      this.dashTrail.push(new Trail(this.x + this.width / 2, this.y + this.height / 2, this.charDef.color, 8));
+    }
+    this.dashTrail = this.dashTrail.filter(t => { t.update(); return !t.isDead(); });
   }
 
-  shoot() {
-    const cx = this.x + this.width / 2;
+  shoot(homingTarget) {
+    const cx = this.x + this.width / 2 + (this.facing * 20);
     const cy = this.y + this.height / 2;
 
     switch (this.charDef.special) {
       case 'spread': {
         for (let i = -1; i <= 1; i++) {
-          const p = new Projectile(
-            cx, cy,
-            this.charDef.projectileSpeed * this.facing,
-            i * 2,
-            this.damage, 'player', this.charDef.projectileColor
-          );
+          const p = new Projectile(cx, cy, this.charDef.projectileSpeed * this.facing, i * 2.5, this.damage, 'player', this.charDef.projectileColor);
           this.projectiles.push(p);
         }
         break;
       }
       case 'power': {
-        const p = new Projectile(
-          cx, cy,
-          this.charDef.projectileSpeed * this.facing, 0,
-          this.damage, 'player', this.charDef.projectileColor, 20, 14
-        );
+        const p = new Projectile(cx, cy, this.charDef.projectileSpeed * this.facing, 0, this.damage, 'player', this.charDef.projectileColor, 22, 16);
         this.projectiles.push(p);
         break;
       }
       case 'homing': {
-        const p = new Projectile(
-          cx, cy,
-          this.charDef.projectileSpeed * this.facing, 0,
-          this.damage, 'player', this.charDef.projectileColor, 10, 10
-        );
+        const p = new Projectile(cx, cy, this.charDef.projectileSpeed * this.facing, (Math.random() - 0.5) * 3, this.damage, 'player', this.charDef.projectileColor, 10, 10);
         p.homing = true;
         this.projectiles.push(p);
         break;
       }
-      default: {
-        const p = new Projectile(
-          cx, cy,
-          this.charDef.projectileSpeed * this.facing, 0,
-          this.damage, 'player', this.charDef.projectileColor
-        );
+      default: { // rapid
+        const p = new Projectile(cx, cy, this.charDef.projectileSpeed * this.facing, 0, this.damage, 'player', this.charDef.projectileColor);
         this.projectiles.push(p);
         break;
       }
@@ -495,36 +704,82 @@ class Player {
   takeDamage(amount) {
     if (this.invincible > 0) return;
     this.hp -= amount;
-    this.invincible = 30;
+    this.invincible = 40;
+    this.hitFlash = 10;
     if (this.hp < 0) this.hp = 0;
   }
 
   draw(ctx) {
+    // Dash trail
+    this.dashTrail.forEach(t => t.draw(ctx));
+
     // Invincibility flash
-    if (this.invincible > 0 && Math.floor(this.invincible / 4) % 2 === 0) return;
+    if (this.invincible > 0 && Math.floor(this.invincible / 3) % 2 === 0) return;
 
     ctx.save();
     ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
     if (this.facing === -1) ctx.scale(-1, 1);
 
+    // Hit flash
+    if (this.hitFlash > 0) {
+      ctx.globalAlpha = 0.8;
+    }
+
+    const sprite = this.charDef.sprite;
+    const bobY = this.onGround ? Math.sin(this.runFrame * 1.5) * 2 : 0;
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(0, this.height / 2, 16, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Legs (animated)
+    const legOffset = this.onGround ? Math.sin(this.runFrame * 1.5) * 5 : 3;
+    ctx.fillStyle = sprite.outline;
+    ctx.fillRect(-10, 12 + bobY, 8, 16 + legOffset);
+    ctx.fillRect(2, 12 + bobY, 8, 16 - legOffset);
+
     // Body
-    ctx.fillStyle = this.charDef.color;
-    ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
+    ctx.fillStyle = sprite.body;
+    ctx.beginPath();
+    ctx.roundRect(-14, -12 + bobY, 28, 28, 4);
+    ctx.fill();
+    ctx.strokeStyle = sprite.outline;
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
     // Head
     ctx.fillStyle = '#FFE4B5';
     ctx.beginPath();
-    ctx.arc(0, -this.height / 4, 12, 0, Math.PI * 2);
+    ctx.arc(0, -18 + bobY, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = sprite.outline;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Hair
+    ctx.fillStyle = sprite.hair;
+    ctx.beginPath();
+    ctx.arc(0, -24 + bobY, 12, Math.PI, Math.PI * 2);
     ctx.fill();
 
     // Eyes
     ctx.fillStyle = '#000';
-    ctx.fillRect(3, -this.height / 4 - 3, 4, 4);
+    ctx.fillRect(3, -20 + bobY, 4, 5);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(4, -20 + bobY, 2, 2);
 
-    // Arm (animated)
-    const armOffset = Math.sin(this.animFrame * 0.8) * 3;
-    ctx.fillStyle = this.charDef.color;
-    ctx.fillRect(this.width / 2 - 8, -4 + armOffset, 14, 8);
+    // Arm (animated aiming forward)
+    const armAngle = !this.onGround ? -0.3 : Math.sin(this.animTimer * 0.3) * 0.1;
+    ctx.save();
+    ctx.translate(10, -2 + bobY);
+    ctx.rotate(armAngle);
+    ctx.fillStyle = sprite.body;
+    ctx.fillRect(0, -4, 16, 8);
+    ctx.fillStyle = sprite.outline;
+    ctx.fillRect(14, -3, 6, 6);
+    ctx.restore();
 
     ctx.restore();
 
@@ -533,18 +788,19 @@ class Player {
   }
 }
 
-// ==================== BOSS BASE ====================
+// ==================== BOSS ENTITY ====================
 class BossEntity {
   constructor(stageDef, stageIndex) {
     this.stageDef = stageDef;
     this.stageIndex = stageIndex;
     this.width = 100;
     this.height = 100;
-    this.x = CANVAS_W - this.width - 60;
+    this.x = CANVAS_W - this.width - 80;
     this.y = CANVAS_H / 2 - this.height / 2;
     this.hp = stageDef.hp;
     this.maxHp = stageDef.hp;
     this.color = stageDef.bossColor;
+    this.accent = stageDef.bossAccent;
     this.projectiles = [];
     this.attackTimer = 0;
     this.attackInterval = 60;
@@ -556,10 +812,23 @@ class BossEntity {
     this.enraged = false;
     this.flashTimer = 0;
     this.defeated = false;
+    this.defeatTimer = 0;
+    this.shakeX = 0;
+    this.shakeY = 0;
+    this.introTimer = 60;
+    this.auraParticles = [];
   }
 
   update(player) {
-    if (this.defeated) return;
+    if (this.defeated) {
+      this.defeatTimer++;
+      return;
+    }
+
+    if (this.introTimer > 0) {
+      this.introTimer--;
+      return;
+    }
 
     this.moveTimer++;
     this.attackTimer++;
@@ -570,17 +839,18 @@ class BossEntity {
       this.patternIndex = (this.patternIndex + 1) % 3;
     }
 
-    // Phase check
-    if (this.hp < this.maxHp * 0.5 && this.phase === 1) {
+    // Phase transitions
+    const hpPercent = this.hp / this.maxHp;
+    if (hpPercent < 0.6 && this.phase === 1) {
       this.phase = 2;
-      this.attackInterval = Math.max(20, this.attackInterval - 15);
+      this.attackInterval = Math.max(25, this.attackInterval - 12);
     }
-    if (this.hp < this.maxHp * 0.25 && !this.enraged) {
+    if (hpPercent < 0.3 && !this.enraged) {
       this.enraged = true;
-      this.attackInterval = Math.max(15, this.attackInterval - 10);
+      this.attackInterval = Math.max(18, this.attackInterval - 10);
     }
 
-    // Movement (varies by boss)
+    // Movement
     this.updateMovement(player);
 
     // Attack
@@ -593,35 +863,51 @@ class BossEntity {
     this.projectiles = this.projectiles.filter(p => p.active);
     this.projectiles.forEach(p => p.update(player));
 
-    // Flash timer
+    // Flash and shake on hit
     if (this.flashTimer > 0) this.flashTimer--;
+    this.shakeX *= 0.8;
+    this.shakeY *= 0.8;
+
+    // Aura particles when enraged
+    if (this.enraged && Math.random() < 0.3) {
+      this.auraParticles.push(new Particle(
+        this.x + Math.random() * this.width,
+        this.y + this.height,
+        (Math.random() - 0.5) * 2,
+        -Math.random() * 3 - 1,
+        this.phase >= 2 ? '#ff0000' : this.color,
+        20 + Math.random() * 15,
+        3 + Math.random() * 3
+      ));
+    }
+    this.auraParticles = this.auraParticles.filter(p => { p.update(); return !p.isDead(); });
 
     // Keep in bounds
-    this.x = Math.max(CANVAS_W * 0.4, Math.min(this.x, CANVAS_W - this.width - 10));
-    this.y = Math.max(10, Math.min(this.y, GROUND_Y - this.height));
+    this.x = Math.max(CANVAS_W * 0.35, Math.min(this.x, CANVAS_W - this.width - 10));
+    this.y = Math.max(20, Math.min(this.y, GROUND_Y - this.height));
   }
 
   updateMovement(player) {
-    // Default oscillating movement
-    this.y += Math.sin(this.moveTimer * 0.03) * 2;
-    this.x += Math.cos(this.moveTimer * 0.02) * 0.5;
+    this.y += Math.sin(this.moveTimer * 0.03) * 1.5;
+    this.x += Math.cos(this.moveTimer * 0.02) * 0.8;
   }
 
   attack(player) {
-    // Override in stage-specific logic
     this.basicAttack(player);
   }
 
   basicAttack(player) {
-    const cx = this.x + this.width / 2;
+    const cx = this.x;
     const cy = this.y + this.height / 2;
-    const p = new Projectile(cx, cy, -5, 0, 10, 'boss', this.color, 16, 12);
+    const p = new Projectile(cx, cy, -6, 0, 10, 'boss', this.color, 16, 12);
     this.projectiles.push(p);
   }
 
   takeDamage(amount) {
     this.hp -= amount;
-    this.flashTimer = 6;
+    this.flashTimer = 8;
+    this.shakeX = (Math.random() - 0.5) * 8;
+    this.shakeY = (Math.random() - 0.5) * 4;
     if (this.hp <= 0) {
       this.hp = 0;
       this.defeated = true;
@@ -629,46 +915,92 @@ class BossEntity {
   }
 
   draw(ctx) {
-    if (this.defeated) return;
+    // Aura particles
+    this.auraParticles.forEach(p => p.draw(ctx));
+
+    if (this.defeated) {
+      // Defeat explosion animation
+      if (this.defeatTimer < 60) {
+        const alpha = 1 - this.defeatTimer / 60;
+        ctx.globalAlpha = alpha;
+        ctx.save();
+        ctx.translate(this.x + this.width / 2 + (Math.random() - 0.5) * 10, this.y + this.height / 2 + (Math.random() - 0.5) * 10);
+        ctx.fillStyle = this.color;
+        ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
+        ctx.restore();
+        ctx.globalAlpha = 1;
+      }
+      return;
+    }
 
     ctx.save();
+    ctx.translate(this.shakeX, this.shakeY);
 
     // Flash on hit
-    if (this.flashTimer > 0) {
-      ctx.globalAlpha = 0.6;
+    if (this.flashTimer > 0 && this.flashTimer % 2 === 0) {
+      ctx.globalAlpha = 0.5;
     }
 
-    // Boss body
+    // Enrage glow
+    if (this.enraged) {
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = '#ff0000';
+    }
+
+    // Boss body with gradient
     const gradient = ctx.createRadialGradient(
-      this.x + this.width / 2, this.y + this.height / 2, 10,
-      this.x + this.width / 2, this.y + this.height / 2, this.width / 2
+      this.x + this.width / 2, this.y + this.height / 2, 5,
+      this.x + this.width / 2, this.y + this.height / 2, this.width * 0.6
     );
-    gradient.addColorStop(0, this.color);
+    gradient.addColorStop(0, this.accent);
+    gradient.addColorStop(0.7, this.color);
     gradient.addColorStop(1, '#111');
     ctx.fillStyle = gradient;
-    ctx.fillRect(this.x, this.y, this.width, this.height);
 
-    // Boss outline
-    ctx.strokeStyle = this.color;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(this.x, this.y, this.width, this.height);
+    // Rounded boss shape
+    ctx.beginPath();
+    ctx.roundRect(this.x, this.y, this.width, this.height, 8);
+    ctx.fill();
 
-    // Enrage indicator
-    if (this.enraged) {
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = '#ff0000';
-      ctx.strokeStyle = '#ff0000';
-      ctx.strokeRect(this.x - 2, this.y - 2, this.width + 4, this.height + 4);
-      ctx.shadowBlur = 0;
-    }
+    // Outline
+    ctx.strokeStyle = this.enraged ? '#ff0000' : this.color;
+    ctx.lineWidth = this.enraged ? 3 : 2;
+    ctx.stroke();
+
+    // Inner details
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.fillRect(this.x + 10, this.y + 10, this.width - 20, this.height / 3);
 
     // Eyes
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(this.x + this.width * 0.3, this.y + this.height * 0.3, 10, 10);
-    ctx.fillRect(this.x + this.width * 0.6, this.y + this.height * 0.3, 10, 10);
-    ctx.fillStyle = '#f00';
-    ctx.fillRect(this.x + this.width * 0.33, this.y + this.height * 0.33, 5, 5);
-    ctx.fillRect(this.x + this.width * 0.63, this.y + this.height * 0.33, 5, 5);
+    const eyeGlow = this.enraged ? '#ff0000' : '#fff';
+    ctx.fillStyle = eyeGlow;
+    ctx.shadowBlur = this.enraged ? 10 : 4;
+    ctx.shadowColor = eyeGlow;
+    ctx.beginPath();
+    ctx.arc(this.x + this.width * 0.35, this.y + this.height * 0.35, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(this.x + this.width * 0.65, this.y + this.height * 0.35, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Pupils
+    ctx.fillStyle = this.enraged ? '#ff4400' : this.color;
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.arc(this.x + this.width * 0.35, this.y + this.height * 0.35, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(this.x + this.width * 0.65, this.y + this.height * 0.35, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Phase indicator
+    if (this.phase >= 2) {
+      ctx.strokeStyle = '#ff4400';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(this.x - 4, this.y - 4, this.width + 8, this.height + 8);
+      ctx.setLineDash([]);
+    }
 
     ctx.restore();
 
@@ -677,119 +1009,131 @@ class BossEntity {
   }
 }
 
-// ==================== BOSS IMPLEMENTATIONS ====================
+// ==================== BOSS FACTORY ====================
 function createBoss(stageIndex) {
   const stageDef = STAGES[stageIndex];
   const boss = new BossEntity(stageDef, stageIndex);
 
   switch (stageIndex) {
-    case 0: // Double Mecha Rocket
-      boss.width = 120;
+    case 0: // Double Mecha Rocket - Big Core MK.I & Fire Breath
+      boss.width = 130;
       boss.height = 80;
-      boss.attackInterval = 50;
-      boss.attack = function (player) {
+      boss.attackInterval = 45;
+      boss.attack = function(player) {
         const cx = this.x;
         const cy = this.y + this.height / 2;
         switch (this.patternIndex) {
-          case 0: // Laser beams
+          case 0: // Triple laser beams
             for (let i = 0; i < 3; i++) {
-              this.projectiles.push(new Projectile(cx, cy + i * 20 - 20, -6, 0, 8, 'boss', '#FF4500', 24, 6));
+              this.projectiles.push(new Projectile(cx, cy + (i - 1) * 25, -7, 0, 8, 'boss', '#FF4500', 28, 5));
             }
             break;
-          case 1: // Fire breath spray
+          case 1: // Fire breath spray fan
             for (let i = 0; i < 5; i++) {
-              const angle = (Math.PI / 4) * (i - 2) / 2;
-              this.projectiles.push(new Projectile(cx, cy, -4 * Math.cos(angle), -4 * Math.sin(angle), 10, 'boss', '#FF8C00', 10, 10));
+              const angle = (Math.PI * 0.6) * ((i / 4) - 0.5);
+              this.projectiles.push(new Projectile(cx, cy, -5 * Math.cos(angle), -5 * Math.sin(angle), 10, 'boss', '#FF8C00', 12, 12));
             }
             break;
-          case 2: // Combined
-            for (let i = 0; i < 2; i++) {
-              this.projectiles.push(new Projectile(cx, cy + i * 30 - 15, -6, 0, 8, 'boss', '#FF4500', 24, 6));
-            }
+          case 2: // Combined: lasers + fire
+            this.projectiles.push(new Projectile(cx, cy - 15, -8, 0, 8, 'boss', '#FF4500', 30, 4));
+            this.projectiles.push(new Projectile(cx, cy + 15, -8, 0, 8, 'boss', '#FF4500', 30, 4));
             for (let i = 0; i < 3; i++) {
-              const angle = (Math.PI / 6) * (i - 1);
-              this.projectiles.push(new Projectile(cx, cy, -4 * Math.cos(angle), -4 * Math.sin(angle), 8, 'boss', '#FF8C00', 10, 10));
+              const angle = (Math.PI * 0.4) * ((i / 2) - 0.5);
+              this.projectiles.push(new Projectile(cx, cy, -4 * Math.cos(angle), -4 * Math.sin(angle), 9, 'boss', '#FF8C00', 10, 10));
             }
             break;
+        }
+        if (this.enraged) {
+          // Extra side shots when enraged
+          this.projectiles.push(new Projectile(cx, this.y, -3, -2, 6, 'boss', '#FFD700', 8, 8));
+          this.projectiles.push(new Projectile(cx, this.y + this.height, -3, 2, 6, 'boss', '#FFD700', 8, 8));
         }
       };
       break;
 
     case 1: // Butch (Rowdyruff Boys)
-      boss.width = 80;
-      boss.height = 90;
-      boss.attackInterval = 70;
-      boss.chargeTimer = 0;
+      boss.width = 85;
+      boss.height = 95;
+      boss.attackInterval = 65;
       boss.charging = false;
-      boss.updateMovement = function (player) {
+      boss.chargeTimer = 0;
+      boss.chargeWarning = 0;
+      boss.updateMovement = function(player) {
+        if (this.chargeWarning > 0) {
+          this.chargeWarning--;
+          this.shakeX = (Math.random() - 0.5) * 4;
+          if (this.chargeWarning <= 0) {
+            this.charging = true;
+            this.chargeTimer = 35;
+          }
+          return;
+        }
         if (this.charging) {
-          this.x -= 8;
+          this.x -= 10;
           this.chargeTimer--;
-          if (this.chargeTimer <= 0) {
+          if (this.chargeTimer <= 0 || this.x < CANVAS_W * 0.35) {
             this.charging = false;
-            this.x = CANVAS_W - this.width - 60;
+            this.x = CANVAS_W - this.width - 80;
           }
         } else {
           this.y += Math.sin(this.moveTimer * 0.04) * 3;
-          if (Math.random() < 0.008 * (this.enraged ? 2 : 1)) {
-            this.charging = true;
-            this.chargeTimer = 30;
+          if (Math.random() < 0.006 * (this.enraged ? 2.5 : 1)) {
+            this.chargeWarning = 30;
           }
         }
       };
-      boss.attack = function (player) {
+      boss.attack = function(player) {
         const cx = this.x;
         const cy = this.y + this.height / 2;
         switch (this.patternIndex) {
           case 0: // Punch wave
-            this.projectiles.push(new Projectile(cx, cy, -7, 0, 15, 'boss', '#228B22', 20, 20));
+            this.projectiles.push(new Projectile(cx, cy, -8, 0, 15, 'boss', '#228B22', 22, 22));
             break;
-          case 1: // Ground pound
+          case 1: // Ground pound rocks
             for (let i = 0; i < 4; i++) {
-              this.projectiles.push(new Projectile(cx - i * 40, GROUND_Y - 20, -3, -2 - i, 10, 'boss', '#8B4513', 14, 14));
+              this.projectiles.push(new Projectile(cx - i * 50, GROUND_Y - 25, -2 - i, -3 - Math.random() * 2, 10, 'boss', '#8B4513', 14, 14));
             }
             break;
-          case 2: // Triple punch
+          case 2: // Triple punch burst
             for (let i = -1; i <= 1; i++) {
-              this.projectiles.push(new Projectile(cx, cy + i * 25, -8, i * 0.5, 12, 'boss', '#32CD32', 18, 14));
+              this.projectiles.push(new Projectile(cx, cy + i * 30, -9, i * 0.8, 12, 'boss', '#32CD32', 18, 14));
             }
             break;
         }
       };
       break;
 
-    case 2: // Mandler
-      boss.width = 90;
-      boss.height = 90;
-      boss.attackInterval = 45;
+    case 2: // Mandler (Terra Cresta)
+      boss.width = 95;
+      boss.height = 95;
+      boss.attackInterval = 40;
       boss.rotAngle = 0;
-      boss.updateMovement = function (player) {
+      boss.updateMovement = function(player) {
         this.rotAngle += 0.03;
-        this.x = CANVAS_W - 180 + Math.cos(this.rotAngle) * 50;
-        this.y = CANVAS_H / 2 - this.height / 2 + Math.sin(this.rotAngle * 1.5) * 100;
+        this.y = CANVAS_H / 2 - this.height / 2 + Math.sin(this.rotAngle) * 80;
+        this.x = CANVAS_W - this.width - 80 + Math.cos(this.rotAngle * 0.7) * 40;
       };
-      boss.attack = function (player) {
+      boss.attack = function(player) {
         const cx = this.x + this.width / 2;
         const cy = this.y + this.height / 2;
         switch (this.patternIndex) {
-          case 0: // Rotating ring
+          case 0: // Rotating ring of projectiles
             for (let i = 0; i < 6; i++) {
-              const angle = (Math.PI * 2 * i) / 6 + this.moveTimer * 0.05;
-              this.projectiles.push(new Projectile(cx, cy, Math.cos(angle) * 3, Math.sin(angle) * 3, 8, 'boss', '#9932CC', 10, 10));
+              const angle = (Math.PI * 2 / 6) * i + this.rotAngle;
+              this.projectiles.push(new Projectile(cx, cy, Math.cos(angle) * 4, Math.sin(angle) * 4, 8, 'boss', '#9932CC', 10, 10));
             }
             break;
-          case 1: // Gravity pull (aimed at player)
-            {
-              const dx = player.x - cx;
-              const dy = player.y - cy;
-              const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-              this.projectiles.push(new Projectile(cx, cy, (dx / dist) * 4, (dy / dist) * 4, 12, 'boss', '#DA70D6', 14, 14));
-            }
+          case 1: // Spiral attack
+            const sAngle = this.moveTimer * 0.15;
+            this.projectiles.push(new Projectile(cx, cy, Math.cos(sAngle) * 5, Math.sin(sAngle) * 5, 8, 'boss', '#BA55D3', 8, 8));
+            this.projectiles.push(new Projectile(cx, cy, Math.cos(sAngle + Math.PI) * 5, Math.sin(sAngle + Math.PI) * 5, 8, 'boss', '#BA55D3', 8, 8));
             break;
-          case 2: // Spiral
-            for (let i = 0; i < 4; i++) {
-              const angle = this.moveTimer * 0.1 + (Math.PI / 2) * i;
-              this.projectiles.push(new Projectile(cx, cy, Math.cos(angle) * 4, Math.sin(angle) * 4, 8, 'boss', '#BA55D3', 8, 8));
+          case 2: // Gravity pull (aimed at player)
+            const dx = player.x + player.width / 2 - cx;
+            const dy = player.y + player.height / 2 - cy;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > 0) {
+              this.projectiles.push(new Projectile(cx, cy, (dx / dist) * 5, (dy / dist) * 5, 12, 'boss', '#7B68EE', 14, 14));
             }
             break;
         }
@@ -797,179 +1141,259 @@ function createBoss(stageIndex) {
       break;
 
     case 3: // Crusher-Bot MK.II
-      boss.width = 130;
+      boss.width = 120;
       boss.height = 120;
-      boss.attackInterval = 80;
-      boss.stompCooldown = 0;
-      boss.updateMovement = function (player) {
-        this.y += Math.sin(this.moveTimer * 0.02) * 1.5;
-        // Stomp mechanic
-        if (this.stompCooldown > 0) this.stompCooldown--;
-        if (this.stompCooldown === 0 && Math.random() < 0.005) {
-          this.y = 50;
-          this.stompCooldown = 60;
-        }
-        if (this.stompCooldown > 40) {
-          this.y += 10;
+      boss.attackInterval = 55;
+      boss.stomping = false;
+      boss.stompTimer = 0;
+      boss.originalY = boss.y;
+      boss.updateMovement = function(player) {
+        if (this.stomping) {
+          this.stompTimer++;
+          if (this.stompTimer < 15) {
+            this.y -= 3; // Rise up
+          } else if (this.stompTimer < 25) {
+            this.y += 8; // Slam down
+          } else if (this.stompTimer > 35) {
+            this.stomping = false;
+            this.stompTimer = 0;
+          }
+          this.y = Math.max(20, Math.min(this.y, GROUND_Y - this.height));
+        } else {
+          this.y += Math.sin(this.moveTimer * 0.02) * 1;
+          this.x += Math.cos(this.moveTimer * 0.015) * 0.5;
+          if (Math.random() < 0.008 * (this.enraged ? 2 : 1)) {
+            this.stomping = true;
+            this.stompTimer = 0;
+          }
         }
       };
-      boss.attack = function (player) {
-        const cx = this.x;
-        const cy = this.y + this.height / 2;
+      boss.attack = function(player) {
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height;
         switch (this.patternIndex) {
-          case 0: // Missile barrage
-            for (let i = 0; i < 3; i++) {
-              this.projectiles.push(new Projectile(cx, cy + (i - 1) * 30, -4, (i - 1) * 1.5, 12, 'boss', '#708090', 16, 10));
-            }
-            break;
-          case 1: // Heavy slam
+          case 0: // Heavy stomp shockwave
             for (let i = 0; i < 5; i++) {
-              this.projectiles.push(new Projectile(this.x + i * 20, GROUND_Y - 30, -2, -Math.random() * 3, 15, 'boss', '#A9A9A9', 12, 12));
+              this.projectiles.push(new Projectile(cx - 60 + i * 30, cy, -2 - Math.random() * 2, -1, 10, 'boss', '#708090', 16, 16));
             }
             break;
-          case 2: // Laser sweep
-            for (let i = 0; i < 4; i++) {
-              const angle = -Math.PI / 2 + (Math.PI / 3) * (i / 3);
-              this.projectiles.push(new Projectile(cx, cy, Math.cos(angle) * 5, Math.sin(angle) * 5, 10, 'boss', '#B0C4DE', 20, 6));
+          case 1: // Missile barrage
+            for (let i = 0; i < 3; i++) {
+              const p = new Projectile(this.x, this.y + i * 30, -5, (Math.random() - 0.5) * 3, 12, 'boss', '#A9A9A9', 14, 8);
+              this.projectiles.push(p);
             }
+            break;
+          case 2: // Combined stomp + missiles
+            this.stomping = true;
+            this.stompTimer = 0;
+            this.projectiles.push(new Projectile(this.x, cy - 40, -6, -1, 14, 'boss', '#C0C0C0', 18, 12));
+            this.projectiles.push(new Projectile(this.x, cy - 40, -6, 1, 14, 'boss', '#C0C0C0', 18, 12));
             break;
         }
       };
       break;
 
     case 4: // Metal Sonic
-      boss.width = 70;
-      boss.height = 70;
+      boss.width = 80;
+      boss.height = 80;
       boss.attackInterval = 35;
-      boss.dashTimer = 0;
       boss.dashing = false;
-      boss.updateMovement = function (player) {
+      boss.dashTimer = 0;
+      boss.dashVX = 0;
+      boss.dashVY = 0;
+      boss.updateMovement = function(player) {
         if (this.dashing) {
-          this.x -= 12;
+          this.x += this.dashVX;
+          this.y += this.dashVY;
           this.dashTimer--;
-          if (this.dashTimer <= 0 || this.x < CANVAS_W * 0.3) {
+          if (this.dashTimer <= 0) {
             this.dashing = false;
-            this.x = CANVAS_W - this.width - 60;
-            this.y = player.y;
+            this.x = Math.max(CANVAS_W * 0.5, Math.min(this.x, CANVAS_W - this.width - 20));
+            this.y = Math.max(20, Math.min(this.y, GROUND_Y - this.height));
           }
         } else {
-          this.y += Math.sin(this.moveTimer * 0.06) * 4;
-          this.x += Math.cos(this.moveTimer * 0.04) * 2;
-          if (Math.random() < 0.01 * (this.enraged ? 2 : 1)) {
+          this.y += Math.sin(this.moveTimer * 0.05) * 3;
+          this.x += Math.cos(this.moveTimer * 0.03) * 2;
+          if (Math.random() < 0.01 * (this.enraged ? 2.5 : 1)) {
             this.dashing = true;
             this.dashTimer = 20;
-            this.y = player.y;
+            const dx = player.x - this.x;
+            const dy = player.y - this.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            this.dashVX = (dx / dist) * 12;
+            this.dashVY = (dy / dist) * 12;
           }
         }
       };
-      boss.attack = function (player) {
-        const cx = this.x;
+      boss.attack = function(player) {
+        const cx = this.x + this.width / 2;
         const cy = this.y + this.height / 2;
         switch (this.patternIndex) {
-          case 0: // Speed shots
-            this.projectiles.push(new Projectile(cx, cy, -9, 0, 8, 'boss', '#1E90FF', 14, 8));
+          case 0: // Speed dash projectiles
+            this.projectiles.push(new Projectile(cx, cy, -10, 0, 10, 'boss', '#1E90FF', 20, 8));
+            this.projectiles.push(new Projectile(cx, cy, -8, -2, 8, 'boss', '#4169E1', 14, 6));
+            this.projectiles.push(new Projectile(cx, cy, -8, 2, 8, 'boss', '#4169E1', 14, 6));
             break;
-          case 1: { // Homing
-            const p = new Projectile(cx, cy, -3, 0, 10, 'boss', '#00BFFF', 10, 10);
+          case 1: // Homing fireball
+            const p = new Projectile(cx, cy, -3, 0, 12, 'boss', '#00BFFF', 12, 12);
             p.homing = true;
             this.projectiles.push(p);
             break;
-          }
-          case 2: // Fan spread
-            for (let i = -2; i <= 2; i++) {
-              this.projectiles.push(new Projectile(cx, cy, -6, i * 2, 8, 'boss', '#4169E1', 12, 8));
+          case 2: // Spin attack (ring of projectiles)
+            for (let i = 0; i < 8; i++) {
+              const angle = (Math.PI * 2 / 8) * i;
+              this.projectiles.push(new Projectile(cx, cy, Math.cos(angle) * 4, Math.sin(angle) * 4, 8, 'boss', '#87CEEB', 8, 8));
             }
             break;
         }
       };
       break;
 
-    case 5: // Roaring Knight
-      boss.width = 100;
-      boss.height = 110;
-      boss.attackInterval = 55;
+    case 5: // Roaring Knight (Deltarune)
+      boss.width = 110;
+      boss.height = 120;
+      boss.attackInterval = 50;
+      boss.phaseShiftTimer = 0;
+      boss.invulnerable = false;
+      boss.invulnTimer = 0;
+      boss.slashing = false;
       boss.slashTimer = 0;
-      boss.updateMovement = function (player) {
-        this.y += Math.sin(this.moveTimer * 0.03) * 2.5;
-        // Phase shift teleport
-        if (this.phase === 2 && Math.random() < 0.008) {
-          this.x = CANVAS_W * 0.5 + Math.random() * (CANVAS_W * 0.4);
-          this.y = Math.random() * (GROUND_Y - this.height - 50) + 50;
+      boss.updateMovement = function(player) {
+        if (this.invulnerable) {
+          this.invulnTimer--;
+          this.y += Math.sin(this.moveTimer * 0.1) * 5;
+          this.x = CANVAS_W - this.width - 80 + Math.cos(this.moveTimer * 0.08) * 60;
+          if (this.invulnTimer <= 0) {
+            this.invulnerable = false;
+          }
+          return;
+        }
+        if (this.slashing) {
+          this.x -= 6;
+          this.slashTimer--;
+          if (this.slashTimer <= 0) {
+            this.slashing = false;
+            this.x = CANVAS_W - this.width - 80;
+          }
+        } else {
+          this.y += Math.sin(this.moveTimer * 0.03) * 2;
+          this.x += Math.cos(this.moveTimer * 0.02) * 1;
+        }
+
+        // Phase shift at health thresholds
+        const hpPct = this.hp / this.maxHp;
+        if ((hpPct < 0.75 && this.phaseShiftTimer === 0) ||
+            (hpPct < 0.5 && this.phaseShiftTimer === 1) ||
+            (hpPct < 0.25 && this.phaseShiftTimer === 2)) {
+          this.phaseShiftTimer++;
+          this.invulnerable = true;
+          this.invulnTimer = 60;
         }
       };
-      boss.attack = function (player) {
+      boss.takeDamage = function(amount) {
+        if (this.invulnerable) return;
+        BossEntity.prototype.takeDamage.call(this, amount);
+      };
+      boss.attack = function(player) {
+        if (this.invulnerable) return;
         const cx = this.x;
         const cy = this.y + this.height / 2;
         switch (this.patternIndex) {
-          case 0: // Sword slash waves
-            for (let i = 0; i < 3; i++) {
-              const angle = -Math.PI / 4 + (Math.PI / 4) * i;
-              this.projectiles.push(new Projectile(cx, cy, Math.cos(angle) * -5, Math.sin(angle) * 5, 14, 'boss', '#FFD700', 22, 6));
+          case 0: // Sword slash wave
+            this.slashing = true;
+            this.slashTimer = 20;
+            this.projectiles.push(new Projectile(cx, cy, -8, 0, 15, 'boss', '#FFD700', 30, 6));
+            this.projectiles.push(new Projectile(cx, cy - 20, -7, -1, 12, 'boss', '#FFA500', 24, 6));
+            this.projectiles.push(new Projectile(cx, cy + 20, -7, 1, 12, 'boss', '#FFA500', 24, 6));
+            break;
+          case 1: // Energy wave projection
+            for (let i = 0; i < 4; i++) {
+              const angle = -0.4 + (i * 0.27);
+              this.projectiles.push(new Projectile(cx, cy, -6 * Math.cos(angle), -6 * Math.sin(angle), 10, 'boss', '#FFD700', 12, 12));
             }
             break;
-          case 1: // Dark energy pillars
-            for (let i = 0; i < 3; i++) {
-              this.projectiles.push(new Projectile(player.x + (i - 1) * 60, 0, 0, 6, 12, 'boss', '#8B0000', 10, 30));
-            }
-            break;
-          case 2: // Roaring blast
-            for (let i = 0; i < 8; i++) {
-              const angle = (Math.PI * 2 * i) / 8;
-              this.projectiles.push(new Projectile(cx, cy, Math.cos(angle) * 4, Math.sin(angle) * 4, 10, 'boss', '#FFD700', 12, 12));
-            }
+          case 2: // Overhead slam
+            this.projectiles.push(new Projectile(player.x, 0, 0, 6, 18, 'boss', '#FF6600', 20, 20));
+            this.projectiles.push(new Projectile(player.x - 40, 0, 0, 5, 14, 'boss', '#FF8800', 14, 14));
+            this.projectiles.push(new Projectile(player.x + 40, 0, 0, 5, 14, 'boss', '#FF8800', 14, 14));
             break;
         }
       };
       break;
 
     case 6: // Roaring Metal (True Final Boss)
-      boss.width = 110;
-      boss.height = 110;
-      boss.attackInterval = 30;
-      boss.rotAngle = 0;
-      boss.teleportCooldown = 0;
-      boss.updateMovement = function (player) {
-        this.rotAngle += 0.04;
-        this.x = CANVAS_W - 200 + Math.cos(this.rotAngle) * 60;
-        this.y = CANVAS_H / 2 - this.height / 2 + Math.sin(this.rotAngle * 1.3) * 80;
-        // Teleport in enrage
-        this.teleportCooldown--;
-        if (this.enraged && this.teleportCooldown <= 0 && Math.random() < 0.015) {
-          this.x = CANVAS_W * 0.4 + Math.random() * (CANVAS_W * 0.5);
-          this.y = Math.random() * (GROUND_Y - this.height - 20);
-          this.teleportCooldown = 30;
+      boss.width = 130;
+      boss.height = 130;
+      boss.attackInterval = 35;
+      boss.superPhase = 0;
+      boss.teleporting = false;
+      boss.teleTimer = 0;
+      boss.updateMovement = function(player) {
+        if (this.teleporting) {
+          this.teleTimer--;
+          if (this.teleTimer <= 0) {
+            this.teleporting = false;
+            this.x = CANVAS_W * 0.5 + Math.random() * (CANVAS_W * 0.4);
+            this.y = 40 + Math.random() * (GROUND_Y - this.height - 80);
+          }
+          return;
+        }
+        this.y += Math.sin(this.moveTimer * 0.04) * 3;
+        this.x += Math.cos(this.moveTimer * 0.025) * 2;
+
+        if (Math.random() < 0.005 * (this.enraged ? 3 : 1)) {
+          this.teleporting = true;
+          this.teleTimer = 15;
+        }
+
+        // Super phase at 25% health
+        if (this.hp < this.maxHp * 0.25 && this.superPhase === 0) {
+          this.superPhase = 1;
+          this.attackInterval = 20;
         }
       };
-      boss.attack = function (player) {
+      boss.attack = function(player) {
+        if (this.teleporting) return;
         const cx = this.x + this.width / 2;
         const cy = this.y + this.height / 2;
-        switch (this.patternIndex) {
-          case 0: // Combined laser + fire
+
+        // Combine attacks from previous bosses
+        const attackSet = this.superPhase === 1 ? 5 : 4;
+        const pattern = Math.floor(Math.random() * attackSet);
+
+        switch (pattern) {
+          case 0: // Metal Sonic dash burst
+            for (let i = -2; i <= 2; i++) {
+              this.projectiles.push(new Projectile(cx, cy, -8, i * 1.5, 10, 'boss', '#1E90FF', 14, 8));
+            }
+            break;
+          case 1: // Knight sword waves
+            this.projectiles.push(new Projectile(cx, cy, -9, 0, 14, 'boss', '#FFD700', 30, 8));
+            this.projectiles.push(new Projectile(cx, cy - 30, -7, -1.5, 12, 'boss', '#FFA500', 20, 6));
+            this.projectiles.push(new Projectile(cx, cy + 30, -7, 1.5, 12, 'boss', '#FFA500', 20, 6));
+            break;
+          case 2: // Spiral + aimed
+            for (let i = 0; i < 6; i++) {
+              const angle = (Math.PI * 2 / 6) * i + this.moveTimer * 0.1;
+              this.projectiles.push(new Projectile(cx, cy, Math.cos(angle) * 5, Math.sin(angle) * 5, 9, 'boss', '#FF1493', 10, 10));
+            }
+            break;
+          case 3: // Overhead rain
             for (let i = 0; i < 4; i++) {
-              this.projectiles.push(new Projectile(cx, cy + i * 18 - 27, -6, 0, 10, 'boss', '#FF1493', 20, 6));
-            }
-            for (let i = 0; i < 3; i++) {
-              const angle = (Math.PI / 5) * (i - 1);
-              this.projectiles.push(new Projectile(cx, cy, -4 * Math.cos(angle), -4 * Math.sin(angle), 10, 'boss', '#FF4500', 10, 10));
+              this.projectiles.push(new Projectile(player.x - 60 + i * 40, -10, 0, 5 + Math.random() * 2, 11, 'boss', '#8B008B', 12, 12));
             }
             break;
-          case 1: // Sword + dash
-            for (let i = 0; i < 5; i++) {
-              this.projectiles.push(new Projectile(cx, cy + i * 14 - 28, -7, 0, 12, 'boss', '#FFD700', 18, 6));
+          case 4: // FULL POWER - all combined
+            // Laser
+            this.projectiles.push(new Projectile(cx, cy, -10, 0, 16, 'boss', '#FF0000', 36, 6));
+            // Spread
+            for (let i = -2; i <= 2; i++) {
+              this.projectiles.push(new Projectile(cx, cy, -6, i * 2, 10, 'boss', '#FF1493', 10, 10));
             }
-            break;
-          case 2: // Full power rotating ring
-            for (let i = 0; i < 10; i++) {
-              const angle = (Math.PI * 2 * i) / 10 + this.rotAngle;
-              this.projectiles.push(new Projectile(cx, cy, Math.cos(angle) * 3.5, Math.sin(angle) * 3.5, 10, 'boss', '#FF1493', 10, 10));
-            }
-            // Plus aimed shots
-            {
-              const dx = player.x - cx;
-              const dy = player.y - cy;
-              const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-              this.projectiles.push(new Projectile(cx, cy, (dx / dist) * 5, (dy / dist) * 5, 14, 'boss', '#FF0000', 16, 16));
-            }
+            // Homing
+            const hp = new Projectile(cx, cy, -2, (Math.random() - 0.5) * 3, 12, 'boss', '#00FFFF', 14, 14);
+            hp.homing = true;
+            this.projectiles.push(hp);
             break;
         }
       };
@@ -982,85 +1406,206 @@ function createBoss(stageIndex) {
 // ==================== GIMMICK SYSTEM ====================
 class GimmickManager {
   constructor() {
-    this.effects = [];
-    this.timer = 0;
     this.type = null;
-  }
-
-  setGimmick(type) {
-    this.type = type;
-    this.effects = [];
+    this.objects = [];
     this.timer = 0;
+    this.active = false;
+    this.gravityFlipped = false;
+    this.speedMultiplier = 1;
   }
 
-  update(player) {
+  init(type) {
+    this.type = type;
+    this.objects = [];
+    this.timer = 0;
+    this.active = true;
+    this.gravityFlipped = false;
+    this.speedMultiplier = 1;
+  }
+
+  update(player, boss) {
+    if (!this.active) return;
     this.timer++;
+
     switch (this.type) {
       case 'laser_walls':
+        // Periodic laser walls that scroll across screen
         if (this.timer % 180 === 0) {
-          this.effects.push({ type: 'laser', y: Math.random() * (GROUND_Y - 40), timer: 60 });
+          this.objects.push({ x: CANVAS_W, y: Math.random() * (GROUND_Y - 60), w: 6, h: 50 + Math.random() * 40, speed: 3 });
+        }
+        this.objects.forEach(obj => { obj.x -= obj.speed; });
+        this.objects = this.objects.filter(obj => obj.x > -20);
+        // Collision with player
+        this.objects.forEach(obj => {
+          if (this.checkCollision(player, obj)) {
+            player.takeDamage(5);
+          }
+        });
+        break;
+
+      case 'destructible_blocks':
+        if (this.timer % 120 === 0 && this.objects.length < 6) {
+          this.objects.push({ x: 200 + Math.random() * 500, y: GROUND_Y - 40 - Math.random() * 100, w: 30, h: 30, hp: 3 });
         }
         break;
+
       case 'gravity_shift':
         if (this.timer % 300 === 0) {
-          this.effects.push({ type: 'gravity', dir: Math.random() > 0.5 ? -1 : 1, timer: 90 });
+          this.gravityFlipped = !this.gravityFlipped;
+        }
+        if (this.gravityFlipped && player) {
+          player.vy -= GRAVITY * 1.5; // counteract normal gravity and reverse
         }
         break;
+
       case 'falling_debris':
-        if (this.timer % 60 === 0) {
-          this.effects.push({ type: 'debris', x: Math.random() * CANVAS_W, y: -20, vy: 3 + Math.random() * 2, timer: 200 });
+        if (this.timer % 80 === 0) {
+          this.objects.push({ x: Math.random() * CANVAS_W, y: -20, w: 20 + Math.random() * 20, h: 20 + Math.random() * 20, vy: 2 + Math.random() * 2, active: true });
+        }
+        this.objects.forEach(obj => {
+          obj.y += obj.vy;
+          if (obj.y > CANVAS_H) obj.active = false;
+          if (obj.active && this.checkCollision(player, obj)) {
+            player.takeDamage(6);
+            obj.active = false;
+          }
+        });
+        this.objects = this.objects.filter(obj => obj.active);
+        break;
+
+      case 'speed_zones':
+        if (this.timer % 200 === 0) {
+          this.objects.push({ x: Math.random() * (CANVAS_W - 100), y: GROUND_Y - 20, w: 100, h: 20, life: 120, boost: Math.random() > 0.5 });
+        }
+        this.objects.forEach(obj => {
+          obj.life--;
+          if (this.checkCollision(player, obj)) {
+            if (obj.boost) {
+              player.speed = player.charDef.speed * 1.8;
+            } else {
+              player.speed = player.charDef.speed * 0.5;
+            }
+          }
+        });
+        this.objects = this.objects.filter(obj => obj.life > 0);
+        if (!this.objects.some(obj => this.checkCollision(player, obj))) {
+          if (player) player.speed = player.charDef.speed;
         }
         break;
-      case 'speed_zones':
-        if (this.timer % 240 === 0) {
-          this.effects.push({ type: 'speed', x: Math.random() * (CANVAS_W - 100), timer: 120 });
+
+      case 'phase_shift':
+        // Arena darkens periodically
+        break;
+
+      case 'enrage_all':
+        // Screen shakes, particles everywhere
+        if (this.timer % 60 === 0) {
+          this.objects.push({ x: Math.random() * CANVAS_W, y: -10, w: 8, h: 8, vy: 3 + Math.random() * 3, color: ['#FF1493', '#FFD700', '#1E90FF', '#FF4500'][Math.floor(Math.random() * 4)], active: true });
         }
+        this.objects.forEach(obj => {
+          obj.y += obj.vy;
+          if (obj.y > CANVAS_H) obj.active = false;
+        });
+        this.objects = this.objects.filter(obj => obj.active);
         break;
     }
+  }
 
-    // Update effects
-    this.effects = this.effects.filter(e => {
-      e.timer--;
-      if (e.type === 'debris') {
-        e.y += e.vy;
-        // Check collision with player
-        if (Math.abs(e.x - player.x) < 30 && Math.abs(e.y - player.y) < 30) {
-          player.takeDamage(5);
-        }
-      }
-      if (e.type === 'gravity' && e.timer > 0) {
-        player.vy += e.dir * 0.3;
-      }
-      if (e.type === 'speed' && e.timer > 0) {
-        if (player.x > e.x && player.x < e.x + 100) {
-          player.x += 2;
-        }
-      }
-      return e.timer > 0;
-    });
+  checkCollision(player, obj) {
+    if (!player) return false;
+    return player.x < obj.x + obj.w &&
+           player.x + player.width > obj.x &&
+           player.y < obj.y + obj.h &&
+           player.y + player.height > obj.y;
   }
 
   draw(ctx) {
-    this.effects.forEach(e => {
-      switch (e.type) {
-        case 'laser':
-          ctx.fillStyle = `rgba(255, 0, 0, ${e.timer / 60 * 0.4})`;
-          ctx.fillRect(0, e.y, CANVAS_W, 4);
-          break;
-        case 'debris':
-          ctx.fillStyle = '#8B4513';
-          ctx.fillRect(e.x, e.y, 20, 20);
-          break;
-        case 'speed':
-          ctx.fillStyle = `rgba(0, 255, 255, ${e.timer / 120 * 0.2})`;
-          ctx.fillRect(e.x, 0, 100, CANVAS_H);
-          break;
-        case 'gravity':
-          ctx.fillStyle = `rgba(128, 0, 128, ${e.timer / 90 * 0.15})`;
+    if (!this.active) return;
+
+    switch (this.type) {
+      case 'laser_walls':
+        this.objects.forEach(obj => {
+          ctx.fillStyle = '#ff0044';
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = '#ff0044';
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+          ctx.shadowBlur = 0;
+        });
+        break;
+
+      case 'destructible_blocks':
+        this.objects.forEach(obj => {
+          ctx.fillStyle = `rgba(139, 69, 19, ${obj.hp / 3})`;
+          ctx.strokeStyle = '#654321';
+          ctx.lineWidth = 2;
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+          ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
+        });
+        break;
+
+      case 'gravity_shift':
+        if (this.gravityFlipped) {
+          ctx.fillStyle = 'rgba(148, 0, 211, 0.1)';
           ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-          break;
-      }
-    });
+          // Indicator arrows
+          ctx.fillStyle = 'rgba(148, 0, 211, 0.4)';
+          for (let i = 0; i < 5; i++) {
+            const ax = 100 + i * 200;
+            const ay = 50 + (this.timer % 40);
+            ctx.beginPath();
+            ctx.moveTo(ax, ay + 10);
+            ctx.lineTo(ax - 8, ay);
+            ctx.lineTo(ax + 8, ay);
+            ctx.fill();
+          }
+        }
+        break;
+
+      case 'falling_debris':
+        this.objects.forEach(obj => {
+          ctx.fillStyle = '#555';
+          ctx.strokeStyle = '#333';
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+          ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
+        });
+        break;
+
+      case 'speed_zones':
+        this.objects.forEach(obj => {
+          const alpha = obj.life / 120;
+          ctx.fillStyle = obj.boost ? `rgba(0, 255, 100, ${alpha * 0.3})` : `rgba(255, 0, 0, ${alpha * 0.3})`;
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+          ctx.strokeStyle = obj.boost ? '#00ff66' : '#ff3333';
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
+          ctx.setLineDash([]);
+        });
+        break;
+
+      case 'phase_shift':
+        // Periodic dark flashes
+        if (Math.sin(this.timer * 0.02) > 0.7) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+          ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+        }
+        break;
+
+      case 'enrage_all':
+        this.objects.forEach(obj => {
+          ctx.fillStyle = obj.color;
+          ctx.shadowBlur = 5;
+          ctx.shadowColor = obj.color;
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+          ctx.shadowBlur = 0;
+        });
+        // Red vignette
+        const vigGrad = ctx.createRadialGradient(CANVAS_W / 2, CANVAS_H / 2, CANVAS_W * 0.3, CANVAS_W / 2, CANVAS_H / 2, CANVAS_W * 0.7);
+        vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+        vigGrad.addColorStop(1, `rgba(139, 0, 0, ${0.15 + Math.sin(this.timer * 0.05) * 0.1})`);
+        ctx.fillStyle = vigGrad;
+        ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+        break;
+    }
   }
 }
 
@@ -1072,41 +1617,7 @@ class Game {
     this.canvas.width = CANVAS_W;
     this.canvas.height = CANVAS_H;
 
-    this.state = GameState.MENU;
-    this.prevState = null;
-    this.input = new InputManager();
-    this.audio = new AudioManager();
-    this.gimmicks = new GimmickManager();
-    this.particles = [];
-
-    this.selectedChar = null;
-    this.currentStage = 0;
-    this.player = null;
-    this.boss = null;
-    this.score = 0;
-    this.stagesCleared = [];
-    this.timeAttackMode = false;
-    this.timeAttackStart = 0;
-    this.timeAttackElapsed = 0;
-    this.bgScrollX = 0;
-
-    // Options
-    this.options = {
-      musicVol: 50,
-      sfxVol: 70,
-      difficulty: 1, // 0=easy, 1=normal, 2=hard
-      screenShake: true
-    };
-
-    // Transition timers
-    this.transitionTimer = 0;
-    this.cutsceneText = '';
-    this.cutsceneType = 'before';
-
-    // Load sounds
-    this.loadAudio();
-
-    // UI references
+    // DOM references
     this.menuOverlay = document.getElementById('menu-overlay');
     this.hudOverlay = document.getElementById('hud-overlay');
     this.touchControls = document.getElementById('touch-controls');
@@ -1117,283 +1628,371 @@ class Game {
     this.cutsceneOverlay = document.getElementById('cutscene-overlay');
     this.timeAttackTimer = document.getElementById('time-attack-timer');
 
-    // Show initial menu
-    this.renderMenu();
+    // Systems
+    this.audio = new AudioManager();
+    this.input = new InputManager();
+    this.gimmicks = new GimmickManager();
 
-    // Start game loop
-    this.lastTime = performance.now();
-    this.loop();
-  }
+    // Game state
+    this.state = GameState.MENU;
+    this.prevState = null;
+    this.selectedChar = null;
+    this.currentStage = 0;
+    this.player = null;
+    this.boss = null;
+    this.particles = [];
+    this.trails = [];
+    this.score = 0;
+    this.bgScrollX = 0;
+    this.stagesCleared = [];
+    this.screenShakeTimer = 0;
+    this.screenShakeIntensity = 0;
 
-  loadAudio() {
-    this.audio.loadSound('shoot', 'Player_FireShoot.wav');
-    this.audio.loadSound('hit', 'HitBoss.wav');
-    this.audio.loadSound('explosion', 'BossDefeat_Explosion.wav');
-    this.audio.loadSound('warning', 'BossWarning.wav');
-    this.audio.loadSound('playerHurt', 'PlayerHurt.wav');
-    this.audio.loadSound('jump', 'Jump.wav');
-    this.audio.loadSound('impact', 'Impact.wav');
-    this.audio.loadSound('land', 'Land.wav');
-    this.audio.loadSound('move', 'Move.wav');
-    this.audio.loadSound('stomp', 'CrusherBot_Stomp.wav');
-    this.audio.loadSound('charge', 'MSChargeFire.wav');
-    this.audio.loadSound('transform', 'Transform.wav');
-    this.audio.loadSound('death', 'PlayerDeath.wav');
-    this.audio.loadSound('clear', '23. Stage Clear.mp3');
-    this.audio.loadSound('gameOver', '21. Game Over.mp3');
+    // Time attack
+    this.timeAttackMode = false;
+    this.timeAttackStart = 0;
+    this.timeAttackElapsed = 0;
+    this.bestTime = parseInt(localStorage.getItem('bestTime') || '0');
+
+    // Options
+    this.options = {
+      musicVol: 50,
+      sfxVol: 70,
+      difficulty: 1,
+      screenShake: true,
+      showFPS: false
+    };
+
+    // Cutscene state
+    this.cutsceneLines = [];
+    this.cutsceneIndex = 0;
+    this.cutsceneCharIndex = 0;
+    this.cutsceneTimer = 0;
+    this.cutsceneType = 'before';
+
+    // Performance
+    this.lastFrameTime = 0;
+    this.fps = 60;
+    this.fpsCounter = 0;
+    this.fpsTime = 0;
+
+    // Stars background
+    this.stars = [];
+    for (let i = 0; i < 100; i++) {
+      this.stars.push({
+        x: Math.random() * CANVAS_W,
+        y: Math.random() * CANVAS_H,
+        speed: 0.5 + Math.random() * 2,
+        size: 1 + Math.random() * 2,
+        brightness: 0.3 + Math.random() * 0.7
+      });
+    }
+
+    // Start
+    this.showMenu(GameState.MENU);
+    this.gameLoop = this.gameLoop.bind(this);
+    requestAnimationFrame(this.gameLoop);
   }
 
   // ==================== GAME LOOP ====================
-  loop() {
-    const now = performance.now();
-    const dt = Math.min((now - this.lastTime) / 16.67, 2); // normalize to 60fps
-    this.lastTime = now;
+  gameLoop(timestamp) {
+    // FPS tracking
+    const delta = timestamp - this.lastFrameTime;
+    this.lastFrameTime = timestamp;
+    this.fpsCounter++;
+    this.fpsTime += delta;
+    if (this.fpsTime >= 1000) {
+      this.fps = this.fpsCounter;
+      this.fpsCounter = 0;
+      this.fpsTime = 0;
+    }
 
     this.input.update();
-    this.update(dt, now);
-    this.render();
 
-    requestAnimationFrame(() => this.loop());
-  }
-
-  update(dt, now) {
-    switch (this.state) {
-      case GameState.PLAYING:
-        this.updatePlaying(dt, now);
-        break;
-      case GameState.BOSS_WARNING:
-        this.transitionTimer--;
-        if (this.transitionTimer <= 0) {
-          this.state = GameState.PLAYING;
-          this.hideAllOverlays();
-          this.bossWarning.classList.remove('active');
-          this.hudOverlay.classList.add('active');
-          this.touchControls.classList.add('active');
-        }
-        break;
-      case GameState.STAGE_CLEAR:
-        this.transitionTimer--;
-        if (this.transitionTimer <= 0) {
-          this.advanceStage();
-        }
-        break;
-      case GameState.CUTSCENE:
-        if (this.input.isFire() || this.input.isAnyKey()) {
-          this.endCutscene();
-        }
-        break;
-      case GameState.PAUSED:
-        break;
+    if (this.state === GameState.PLAYING) {
+      this.updateGameplay(timestamp);
+    } else if (this.state === GameState.CUTSCENE) {
+      this.updateCutscene();
+    } else if (this.state === GameState.BOSS_WARNING) {
+      this.updateBossWarning();
     }
 
-    // Pause/unpause toggle (mutually exclusive in one frame)
+    // Pause check
     if (this.state === GameState.PLAYING && this.input.isPause()) {
       this.pauseGame();
-    } else if (this.state === GameState.PAUSED && this.input.isPause()) {
-      this.resumeGame();
-    }
-
-    // Update particles
-    this.particles = this.particles.filter(p => {
-      p.update();
-      return !p.isDead();
-    });
-  }
-
-  updatePlaying(dt, now) {
-    if (!this.player || !this.boss) return;
-
-    this.player.update(this.input, now, this.boss);
-    this.boss.update(this.player);
-
-    // Gimmicks
-    this.gimmicks.update(this.player);
-
-    // Collision: player projectiles vs boss
-    this.player.projectiles.forEach(p => {
-      if (p.active && this.collides(p, this.boss)) {
-        this.boss.takeDamage(p.damage);
-        p.active = false;
-        this.audio.playSound('hit');
-        this.spawnParticles(p.x, p.y, this.boss.color, 5);
-        this.score += 10;
-      }
-    });
-
-    // Collision: boss projectiles vs player
-    this.boss.projectiles.forEach(p => {
-      if (p.active && this.collides(p, this.player)) {
-        this.player.takeDamage(p.damage * this.getDiffMultiplier());
-        p.active = false;
-        this.audio.playSound('playerHurt');
-        this.spawnParticles(p.x, p.y, '#ff0000', 4);
-        if (this.options.screenShake) this.shakeScreen();
-      }
-    });
-
-    // Collision: player vs boss body
-    if (this.collides(this.player, this.boss) && this.player.invincible === 0) {
-      this.player.takeDamage(5 * this.getDiffMultiplier());
-      this.audio.playSound('impact');
-      if (this.options.screenShake) this.shakeScreen();
-    }
-
-    // Update HUD
-    this.updateHUD();
-
-    // Check boss defeat
-    if (this.boss.defeated) {
-      this.onBossDefeated();
-    }
-
-    // Check player death
-    if (this.player.hp <= 0) {
-      this.onPlayerDeath();
-    }
-
-    // Time attack
-    if (this.timeAttackMode) {
-      this.timeAttackElapsed = now - this.timeAttackStart;
-      this.updateTimeAttackDisplay();
     }
 
     // Background scroll
     this.bgScrollX += 0.5;
+
+    // Update particles
+    this.particles = this.particles.filter(p => { p.update(); return !p.isDead(); });
+
+    // Screen shake decay
+    if (this.screenShakeTimer > 0) this.screenShakeTimer--;
+
+    // Time attack timer
+    if (this.timeAttackMode && this.state === GameState.PLAYING) {
+      this.timeAttackElapsed = Date.now() - this.timeAttackStart;
+      this.updateTimeAttackDisplay();
+    }
+
+    this.render();
+    requestAnimationFrame(this.gameLoop);
   }
 
-  // ==================== COLLISION ====================
-  collides(a, b) {
+  // ==================== GAMEPLAY UPDATE ====================
+  updateGameplay(now) {
+    if (!this.player || !this.boss) return;
+
+    // Update entities
+    this.player.update(this.input, now, this.boss);
+    this.boss.update(this.player);
+
+    // Gimmick updates
+    this.gimmicks.update(this.player, this.boss);
+
+    // Collision: player projectiles -> boss
+    this.player.projectiles.forEach(proj => {
+      if (!proj.active || this.boss.defeated) return;
+      if (this.checkAABB(proj, this.boss)) {
+        proj.active = false;
+        this.boss.takeDamage(proj.damage * this.getDiffMultiplier('playerDmg'));
+        this.score += 10;
+        this.spawnParticles(proj.x, proj.y, this.boss.color, 5);
+        this.audio.playSound('hitBoss');
+        if (this.options.screenShake) this.triggerScreenShake(3);
+      }
+    });
+
+    // Collision: boss projectiles -> player
+    this.boss.projectiles.forEach(proj => {
+      if (!proj.active) return;
+      if (this.checkAABB(proj, this.player)) {
+        proj.active = false;
+        this.player.takeDamage(proj.damage * this.getDiffMultiplier('bossDmg'));
+        this.spawnParticles(proj.x, proj.y, '#ff4444', 8);
+        this.audio.playSound('playerHurt');
+        if (this.options.screenShake) this.triggerScreenShake(5);
+      }
+    });
+
+    // Collision: boss body -> player (contact damage)
+    if (!this.boss.defeated && this.checkAABB(this.player, this.boss)) {
+      this.player.takeDamage(5 * this.getDiffMultiplier('bossDmg'));
+    }
+
+    // Check win/lose
+    if (this.boss.defeated && this.boss.defeatTimer > 60) {
+      this.onBossDefeated();
+    }
+    if (this.player.hp <= 0) {
+      this.onPlayerDeath();
+    }
+
+    // Update HUD
+    this.updateHUD();
+  }
+
+  getDiffMultiplier(type) {
+    const diff = this.options.difficulty;
+    if (type === 'playerDmg') return [1.3, 1.0, 0.7][diff];
+    if (type === 'bossDmg') return [0.7, 1.0, 1.4][diff];
+    if (type === 'bossHp') return [0.8, 1.0, 1.3][diff];
+    return 1;
+  }
+
+  checkAABB(a, b) {
     return a.x < b.x + b.width &&
-           a.x + a.width > b.x &&
+           a.x + (a.width || 0) > b.x &&
            a.y < b.y + b.height &&
-           a.y + a.height > b.y;
-  }
-
-  // ==================== DIFFICULTY ====================
-  getDiffMultiplier() {
-    return [0.7, 1.0, 1.4][this.options.difficulty];
+           a.y + (a.height || 0) > b.y;
   }
 
   // ==================== GAME FLOW ====================
   startGame(stageIndex) {
-    this.currentStage = stageIndex || 0;
-    this.score = 0;
-    if (this.timeAttackMode) {
-      this.timeAttackStart = performance.now();
-    }
+    this.currentStage = stageIndex;
+    this.hideAllOverlays();
     this.showCutscene('before');
   }
 
   showCutscene(type) {
-    const stage = STAGES[this.currentStage];
-    this.cutsceneType = type;
-    this.cutsceneText = type === 'before' ? stage.cutsceneBefore : stage.cutsceneAfter;
     this.state = GameState.CUTSCENE;
+    this.cutsceneType = type;
+    const stage = STAGES[this.currentStage];
+    this.cutsceneLines = type === 'before' ? stage.cutsceneBefore : stage.cutsceneAfter;
+    this.cutsceneIndex = 0;
+    this.cutsceneCharIndex = 0;
+    this.cutsceneTimer = 0;
+
     this.hideAllOverlays();
     this.cutsceneOverlay.classList.add('active');
-    document.getElementById('cutscene-text').textContent = this.cutsceneText;
-    document.getElementById('cutscene-speaker').textContent = type === 'before' ? `STAGE ${stage.id} - ${stage.name}` : 'STAGE CLEAR';
+    this.renderCutsceneLine();
+  }
+
+  renderCutsceneLine() {
+    const line = this.cutsceneLines[this.cutsceneIndex];
+    if (!line) return;
+    document.getElementById('cutscene-speaker').textContent = line.speaker;
+    document.getElementById('cutscene-text').textContent = '';
+    this.cutsceneCharIndex = 0;
+  }
+
+  updateCutscene() {
+    const line = this.cutsceneLines[this.cutsceneIndex];
+    if (!line) return;
+
+    // Typewriter effect
+    this.cutsceneTimer++;
+    if (this.cutsceneTimer % 2 === 0 && this.cutsceneCharIndex < line.text.length) {
+      this.cutsceneCharIndex++;
+      document.getElementById('cutscene-text').textContent = line.text.substring(0, this.cutsceneCharIndex);
+    }
+
+    // Advance on key press
+    if (this.input.isAnyKey() && this.cutsceneTimer > 15) {
+      if (this.cutsceneCharIndex < line.text.length) {
+        // Show full text instantly
+        this.cutsceneCharIndex = line.text.length;
+        document.getElementById('cutscene-text').textContent = line.text;
+        this.cutsceneTimer = 0;
+      } else {
+        // Next line
+        this.cutsceneIndex++;
+        this.cutsceneTimer = 0;
+        if (this.cutsceneIndex >= this.cutsceneLines.length) {
+          this.endCutscene();
+        } else {
+          this.renderCutsceneLine();
+        }
+      }
+    }
   }
 
   endCutscene() {
     this.cutsceneOverlay.classList.remove('active');
     if (this.cutsceneType === 'before') {
-      this.startBossWarning();
+      this.showBossWarning();
     } else {
-      this.advanceToNextStage();
+      this.onStageClear();
     }
   }
 
-  startBossWarning() {
+  showBossWarning() {
     this.state = GameState.BOSS_WARNING;
-    this.transitionTimer = 90;
-    this.hideAllOverlays();
     this.bossWarning.classList.add('active');
-    this.bossWarning.textContent = `WARNING! BOSS APPROACHING!`;
-    this.audio.playSound('warning');
-    this.initStage();
+    this.bossWarningTimer = 0;
+    this.audio.playSound('bossWarning');
   }
 
-  initStage() {
-    const stage = STAGES[this.currentStage];
+  updateBossWarning() {
+    this.bossWarningTimer++;
+    if (this.bossWarningTimer > 90) {
+      this.bossWarning.classList.remove('active');
+      this.beginBattle();
+    }
+  }
+
+  beginBattle() {
+    this.state = GameState.PLAYING;
     this.player = new Player(this.selectedChar);
     this.boss = createBoss(this.currentStage);
-
-    // Apply difficulty
-    const mult = this.getDiffMultiplier();
-    this.boss.maxHp = Math.floor(this.boss.maxHp * mult);
-    this.boss.hp = this.boss.maxHp;
-
-    this.gimmicks.setGimmick(stage.gimmick);
-    this.audio.playMusic(stage.music);
+    this.boss.hp = Math.floor(this.boss.hp * this.getDiffMultiplier('bossHp'));
+    this.boss.maxHp = this.boss.hp;
+    this.gimmicks.init(STAGES[this.currentStage].gimmick);
     this.particles = [];
+
+    // Show HUD and touch controls
+    this.hudOverlay.classList.add('active');
+    this.touchControls.classList.add('active');
+
+    // Play music
+    this.audio.playMusic(STAGES[this.currentStage].music);
+
+    // Start time attack timer
+    if (this.timeAttackMode && this.currentStage === 0) {
+      this.timeAttackStart = Date.now();
+    }
   }
 
   onBossDefeated() {
     this.state = GameState.STAGE_CLEAR;
-    this.transitionTimer = 120;
-    this.stagesCleared.push(this.currentStage);
-    this.score += 1000 * (this.currentStage + 1);
     this.audio.stopMusic();
-    this.audio.playSound('explosion');
-    this.audio.playSound('clear');
-    this.hideAllOverlays();
-    this.stageClear.classList.add('active');
-    document.getElementById('clear-stage-name').textContent = STAGES[this.currentStage].name;
+    this.audio.playSound('bossDefeat');
 
-    // Explosion particles
-    for (let i = 0; i < 30; i++) {
+    // Giant explosion
+    for (let i = 0; i < 40; i++) {
       this.spawnParticles(
-        this.boss.x + this.boss.width / 2,
-        this.boss.y + this.boss.height / 2,
-        this.boss.color, 1
+        this.boss.x + Math.random() * this.boss.width,
+        this.boss.y + Math.random() * this.boss.height,
+        this.boss.color, 3
       );
     }
+
+    this.score += 1000 * (this.currentStage + 1);
+    if (!this.stagesCleared.includes(this.currentStage)) {
+      this.stagesCleared.push(this.currentStage);
+    }
+
+    if (this.options.screenShake) this.triggerScreenShake(15);
+
+    // Show after-cutscene after delay
+    setTimeout(() => {
+      this.showCutscene('after');
+    }, 1500);
   }
 
-  advanceStage() {
-    this.stageClear.classList.remove('active');
+  onStageClear() {
+    // Move to next stage or victory
     if (this.currentStage >= STAGES.length - 1) {
       this.showVictory();
     } else {
-      this.showCutscene('after');
+      this.currentStage++;
+      this.hideAllOverlays();
+      this.showCutscene('before');
     }
-  }
-
-  advanceToNextStage() {
-    this.currentStage++;
-    this.showCutscene('before');
   }
 
   showVictory() {
     this.state = GameState.VICTORY;
     this.hideAllOverlays();
-    this.gameOverEl.classList.add('active');
+
+    const el = this.gameOverEl;
+    el.classList.add('active');
     document.getElementById('gameover-title').textContent = 'VICTORY!';
-    document.getElementById('gameover-title').style.color = '#00ff88';
-    document.getElementById('gameover-title').style.textShadow = '0 0 20px #00ff88';
-    document.getElementById('gameover-result').textContent = `All stages cleared! Score: ${this.score}`;
+    document.getElementById('gameover-title').style.color = '#FFD700';
+    document.getElementById('gameover-result').textContent = `YOU DEFEATED ALL 7 BOSSES! SCORE: ${this.score}`;
+
     if (this.timeAttackMode) {
-      document.getElementById('gameover-time').textContent = `Time: ${this.formatTime(this.timeAttackElapsed)}`;
-      document.getElementById('gameover-time').style.display = 'block';
+      const timeEl = document.getElementById('gameover-time');
+      timeEl.style.display = 'block';
+      timeEl.textContent = `TIME: ${this.formatTime(this.timeAttackElapsed)}`;
+      if (!this.bestTime || this.timeAttackElapsed < this.bestTime) {
+        this.bestTime = this.timeAttackElapsed;
+        localStorage.setItem('bestTime', String(this.bestTime));
+        timeEl.textContent += ' (NEW BEST!)';
+      }
     }
+
     this.audio.stopMusic();
   }
 
   onPlayerDeath() {
     this.state = GameState.GAME_OVER;
     this.hideAllOverlays();
-    this.gameOverEl.classList.add('active');
+
+    const el = this.gameOverEl;
+    el.classList.add('active');
     document.getElementById('gameover-title').textContent = 'GAME OVER';
-    document.getElementById('gameover-title').style.color = '#ff0000';
-    document.getElementById('gameover-title').style.textShadow = '0 0 20px #ff0000';
-    document.getElementById('gameover-result').textContent = `Defeated at Stage ${this.currentStage + 1}. Score: ${this.score}`;
+    document.getElementById('gameover-title').style.color = '#ff4444';
+    document.getElementById('gameover-result').textContent = `Defeated at Stage ${this.currentStage + 1}: ${STAGES[this.currentStage].name}`;
     document.getElementById('gameover-time').style.display = 'none';
+
     this.audio.stopMusic();
-    this.audio.playSound('death');
-    this.audio.playSound('gameOver');
+    this.audio.playSound('playerDeath');
   }
 
+  // ==================== PAUSE ====================
   pauseGame() {
     this.prevState = this.state;
     this.state = GameState.PAUSED;
@@ -1426,7 +2025,7 @@ class Game {
           <div class="title-section">
             <h1>FIREBOY</h1>
             <h2>THE LEGEND OF TERRA NEMESIS</h2>
-            <div class="subtitle">BOSS RUSH MODE</div>
+            <div class="subtitle">~ BOSS RUSH MODE ~</div>
           </div>
           <div class="menu-buttons">
             <button class="menu-btn" onclick="game.showMenu('${GameState.CHAR_SELECT}')">BOSS RUSH</button>
@@ -1441,44 +2040,43 @@ class Game {
       case GameState.CHAR_SELECT:
         container.innerHTML = `
           <button class="back-btn" onclick="game.showMenu('${GameState.MENU}')">← BACK</button>
-          <div class="title-section">
-            <h2>SELECT CHARACTER</h2>
-          </div>
+          <div class="title-section"><h2>SELECT YOUR CHARACTER</h2></div>
           <div class="char-select-grid">
             ${Object.values(CHARACTERS).map(c => `
               <div class="char-card ${this.selectedChar && this.selectedChar.id === c.id ? 'selected' : ''}" onclick="game.selectCharacter('${c.id}')">
-                <div class="char-icon" style="background: ${c.color};">${c.name[0]}</div>
+                <div class="char-icon" style="background: radial-gradient(circle, ${c.accentColor}, ${c.color});">${c.name[0]}</div>
                 <div class="char-name">${c.name}</div>
                 <div class="char-desc">${c.description}</div>
                 <div class="char-stats">
-                  <div class="stat-row"><span>HP</span><div class="stat-bar-mini"><div class="stat-bar-mini-fill" style="width:${c.hp / 1.2}%; background:${c.color}"></div></div></div>
-                  <div class="stat-row"><span>SPD</span><div class="stat-bar-mini"><div class="stat-bar-mini-fill" style="width:${c.speed * 14}%; background:${c.color}"></div></div></div>
-                  <div class="stat-row"><span>ATK</span><div class="stat-bar-mini"><div class="stat-bar-mini-fill" style="width:${c.damage * 4}%; background:${c.color}"></div></div></div>
+                  <div class="stat-row"><span>HP</span><div class="stat-bar-mini"><div class="stat-bar-mini-fill" style="width:${c.hp / 1.2}%; background: linear-gradient(90deg, ${c.color}, ${c.accentColor})"></div></div></div>
+                  <div class="stat-row"><span>SPD</span><div class="stat-bar-mini"><div class="stat-bar-mini-fill" style="width:${c.speed * 14}%; background: linear-gradient(90deg, ${c.color}, ${c.accentColor})"></div></div></div>
+                  <div class="stat-row"><span>ATK</span><div class="stat-bar-mini"><div class="stat-bar-mini-fill" style="width:${c.damage * 4}%; background: linear-gradient(90deg, ${c.color}, ${c.accentColor})"></div></div></div>
+                  <div class="stat-row"><span>RATE</span><div class="stat-bar-mini"><div class="stat-bar-mini-fill" style="width:${100 - (c.fireRate / 4)}%; background: linear-gradient(90deg, ${c.color}, ${c.accentColor})"></div></div></div>
                 </div>
               </div>
             `).join('')}
           </div>
-          <button class="menu-btn" onclick="game.confirmCharacter()" ${!this.selectedChar ? 'disabled style="opacity:0.4"' : ''}>START BOSS RUSH</button>
+          <button class="menu-btn start-btn" onclick="game.confirmCharacter()" ${!this.selectedChar ? 'disabled style="opacity:0.4;pointer-events:none"' : ''}>START BOSS RUSH</button>
         `;
         break;
 
       case GameState.STAGE_SELECT:
         container.innerHTML = `
           <button class="back-btn" onclick="game.showMenu('${GameState.MENU}')">← BACK</button>
-          <div class="title-section">
-            <h2>STAGE SELECT</h2>
-          </div>
+          <div class="title-section"><h2>STAGE SELECT</h2><div class="subtitle">Select a stage to begin</div></div>
           <div class="stage-list">
-            ${STAGES.map((s, i) => `
-              <div class="stage-item ${i > 0 && !this.stagesCleared.includes(i - 1) ? 'locked' : ''}" onclick="game.selectStage(${i})">
-                <div class="stage-num">${s.id}</div>
+            ${STAGES.map((s, i) => {
+              const locked = i > 0 && !this.stagesCleared.includes(i - 1);
+              return `
+              <div class="stage-item ${locked ? 'locked' : ''} ${this.stagesCleared.includes(i) ? 'cleared' : ''}" onclick="game.selectStage(${i})">
+                <div class="stage-num" style="background: ${locked ? '#333' : s.bossColor}">${s.id}</div>
                 <div class="stage-info">
                   <div class="stage-name">${s.name}</div>
-                  <div class="stage-boss">Boss: ${s.boss}</div>
+                  <div class="stage-boss">${s.boss}</div>
                 </div>
-                ${this.stagesCleared.includes(i) ? '<span style="color:#0f0">✓</span>' : ''}
-              </div>
-            `).join('')}
+                <div class="stage-status">${this.stagesCleared.includes(i) ? '★' : locked ? '🔒' : '→'}</div>
+              </div>`;
+            }).join('')}
           </div>
         `;
         break;
@@ -1486,38 +2084,42 @@ class Game {
       case GameState.OPTIONS:
         container.innerHTML = `
           <button class="back-btn" onclick="game.showMenu('${GameState.MENU}')">← BACK</button>
-          <div class="title-section">
-            <h2>OPTIONS</h2>
-          </div>
+          <div class="title-section"><h2>OPTIONS</h2></div>
           <div class="options-panel">
             <div class="option-row">
               <span class="option-label">Music Volume</span>
               <div class="option-value">
-                <button class="option-btn" onclick="game.adjustOption('musicVol', -10)">-</button>
-                <span id="opt-music">${this.options.musicVol}%</span>
+                <button class="option-btn" onclick="game.adjustOption('musicVol', -10)">−</button>
+                <span class="option-display" id="opt-music">${this.options.musicVol}%</span>
                 <button class="option-btn" onclick="game.adjustOption('musicVol', 10)">+</button>
               </div>
             </div>
             <div class="option-row">
               <span class="option-label">SFX Volume</span>
               <div class="option-value">
-                <button class="option-btn" onclick="game.adjustOption('sfxVol', -10)">-</button>
-                <span id="opt-sfx">${this.options.sfxVol}%</span>
+                <button class="option-btn" onclick="game.adjustOption('sfxVol', -10)">−</button>
+                <span class="option-display" id="opt-sfx">${this.options.sfxVol}%</span>
                 <button class="option-btn" onclick="game.adjustOption('sfxVol', 10)">+</button>
               </div>
             </div>
             <div class="option-row">
               <span class="option-label">Difficulty</span>
               <div class="option-value">
-                <button class="option-btn" onclick="game.adjustOption('difficulty', -1)">-</button>
-                <span id="opt-diff">${['EASY', 'NORMAL', 'HARD'][this.options.difficulty]}</span>
+                <button class="option-btn" onclick="game.adjustOption('difficulty', -1)">−</button>
+                <span class="option-display diff-${this.options.difficulty}" id="opt-diff">${['EASY', 'NORMAL', 'HARD'][this.options.difficulty]}</span>
                 <button class="option-btn" onclick="game.adjustOption('difficulty', 1)">+</button>
               </div>
             </div>
             <div class="option-row">
               <span class="option-label">Screen Shake</span>
               <div class="option-value">
-                <button class="menu-btn" style="width:auto;padding:8px 16px;font-size:12px" onclick="game.toggleShake()">${this.options.screenShake ? 'ON' : 'OFF'}</button>
+                <button class="option-btn toggle ${this.options.screenShake ? 'active' : ''}" onclick="game.toggleShake()">${this.options.screenShake ? 'ON' : 'OFF'}</button>
+              </div>
+            </div>
+            <div class="option-row">
+              <span class="option-label">Show FPS</span>
+              <div class="option-value">
+                <button class="option-btn toggle ${this.options.showFPS ? 'active' : ''}" onclick="game.toggleFPS()">${this.options.showFPS ? 'ON' : 'OFF'}</button>
               </div>
             </div>
           </div>
@@ -1529,13 +2131,22 @@ class Game {
           <button class="back-btn" onclick="game.showMenu('${GameState.MENU}')">← BACK</button>
           <div class="title-section">
             <h2>TIME ATTACK</h2>
-            <div class="subtitle">Complete all stages as fast as possible!</div>
+            <div class="subtitle">Complete all 7 stages as fast as possible!</div>
+          </div>
+          <div class="time-attack-info">
+            <div class="ta-record">
+              <span class="ta-label">BEST TIME</span>
+              <span class="ta-value">${this.bestTime ? this.formatTime(this.bestTime) : '--:--:--'}</span>
+            </div>
           </div>
           <div class="menu-buttons">
-            <button class="menu-btn" onclick="game.startTimeAttack()">START TIME ATTACK</button>
+            <button class="menu-btn start-btn" onclick="game.startTimeAttack()">START TIME ATTACK</button>
           </div>
-          <div style="margin-top:20px; text-align:center; color:#888; font-size:13px;">
-            <p>Best Time: ${this.bestTime ? this.formatTime(this.bestTime) : '--:--:---'}</p>
+          <div class="ta-rules">
+            <p>• Fight all 7 bosses in sequence</p>
+            <p>• Timer starts at Stage 1</p>
+            <p>• No continues - one life!</p>
+            <p>• Cutscenes are skippable</p>
           </div>
         `;
         break;
@@ -1543,23 +2154,26 @@ class Game {
       case GameState.EXTRA:
         container.innerHTML = `
           <button class="back-btn" onclick="game.showMenu('${GameState.MENU}')">← BACK</button>
-          <div class="title-section">
-            <h2>EXTRA</h2>
-          </div>
-          <div style="text-align:center; color:#888; font-size:14px; max-width:400px; line-height:1.6;">
-            <p><strong style="color:#ffcc00">Characters:</strong> Fireboy, Caroline, Butch, Anabel</p>
-            <p style="margin-top:10px"><strong style="color:#ffcc00">Bosses:</strong></p>
-            <p>1. Big Core MK.I & Fire Breath</p>
-            <p>2. Butch (Rowdyruff Boys)</p>
-            <p>3. Mandler (Terra Cresta)</p>
-            <p>4. Crusher-Bot MK.II</p>
-            <p>5. Metal Sonic</p>
-            <p>6. Roaring Knight (Deltarune)</p>
-            <p>7. Roaring Metal (True Final Boss)</p>
-            <p style="margin-top:15px; color:#666; font-size:11px;">
-              Inspired by Gradius, Sonic 3, Terra Cresta, Deltarune<br>
-              Fireboy The Brothers © Player10thGames
-            </p>
+          <div class="title-section"><h2>EXTRA</h2></div>
+          <div class="extra-content">
+            <div class="extra-section">
+              <h3>PLAYABLE CHARACTERS</h3>
+              <div class="extra-list">
+                ${Object.values(CHARACTERS).map(c => `<div class="extra-item"><span class="dot" style="background:${c.color}"></span>${c.name} - ${c.description}</div>`).join('')}
+              </div>
+            </div>
+            <div class="extra-section">
+              <h3>BOSS GALLERY</h3>
+              <div class="extra-list">
+                ${STAGES.map(s => `<div class="extra-item"><span class="dot" style="background:${s.bossColor}"></span>Stage ${s.id}: ${s.boss} <span class="extra-sub">${s.bossSubtitle}</span></div>`).join('')}
+              </div>
+            </div>
+            <div class="extra-section credits">
+              <h3>CREDITS</h3>
+              <p>Fireboy The Brothers © Player10thGames</p>
+              <p>Boss Inspirations: Gradius, Sonic, Terra Cresta, Deltarune</p>
+              <p>Engine: HTML5 Canvas</p>
+            </div>
           </div>
         `;
         break;
@@ -1574,6 +2188,7 @@ class Game {
   confirmCharacter() {
     if (!this.selectedChar) return;
     this.timeAttackMode = false;
+    this.score = 0;
     this.startGame(0);
   }
 
@@ -1584,6 +2199,7 @@ class Game {
       return;
     }
     this.timeAttackMode = false;
+    this.score = 0;
     this.startGame(index);
   }
 
@@ -1593,6 +2209,7 @@ class Game {
       return;
     }
     this.timeAttackMode = true;
+    this.score = 0;
     this.startGame(0);
   }
 
@@ -1614,6 +2231,11 @@ class Game {
     this.renderMenu();
   }
 
+  toggleFPS() {
+    this.options.showFPS = !this.options.showFPS;
+    this.renderMenu();
+  }
+
   returnToMenu() {
     this.hideAllOverlays();
     this.gameOverEl.classList.remove('active');
@@ -1623,14 +2245,25 @@ class Game {
   retryStage() {
     this.hideAllOverlays();
     this.gameOverEl.classList.remove('active');
-    this.showCutscene('before');
+    this.startGame(this.currentStage);
   }
 
   // ==================== HUD ====================
   updateHUD() {
     if (!this.player || !this.boss) return;
-    document.getElementById('player-hp-fill').style.width = `${(this.player.hp / this.player.maxHp) * 100}%`;
-    document.getElementById('boss-hp-fill').style.width = `${(this.boss.hp / this.boss.maxHp) * 100}%`;
+    const playerHpPct = Math.max(0, (this.player.hp / this.player.maxHp) * 100);
+    const bossHpPct = Math.max(0, (this.boss.hp / this.boss.maxHp) * 100);
+
+    document.getElementById('player-hp-fill').style.width = `${playerHpPct}%`;
+    document.getElementById('boss-hp-fill').style.width = `${bossHpPct}%`;
+
+    // Color change when low HP
+    if (playerHpPct < 25) {
+      document.getElementById('player-hp-fill').style.background = 'linear-gradient(180deg, #ff3333, #cc0000)';
+    } else {
+      document.getElementById('player-hp-fill').style.background = `linear-gradient(180deg, ${this.selectedChar.accentColor}, ${this.selectedChar.color})`;
+    }
+
     document.getElementById('hud-player-name').textContent = this.selectedChar.name;
     document.getElementById('hud-boss-name').textContent = STAGES[this.currentStage].boss;
     document.getElementById('hud-stage').textContent = `STAGE ${this.currentStage + 1}`;
@@ -1655,62 +2288,117 @@ class Game {
   // ==================== RENDERING ====================
   render() {
     const ctx = this.ctx;
-    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
-    if (this.state === GameState.PLAYING || this.state === GameState.PAUSED || this.state === GameState.BOSS_WARNING) {
-      this.renderGameplay(ctx);
-    } else if (this.state === GameState.STAGE_CLEAR || this.state === GameState.GAME_OVER || this.state === GameState.VICTORY) {
+    // Screen shake offset
+    let shakeX = 0, shakeY = 0;
+    if (this.screenShakeTimer > 0) {
+      shakeX = (Math.random() - 0.5) * this.screenShakeIntensity;
+      shakeY = (Math.random() - 0.5) * this.screenShakeIntensity;
+    }
+
+    ctx.save();
+    ctx.translate(shakeX, shakeY);
+    ctx.clearRect(-10, -10, CANVAS_W + 20, CANVAS_H + 20);
+
+    if (this.state === GameState.PLAYING || this.state === GameState.PAUSED ||
+        this.state === GameState.BOSS_WARNING || this.state === GameState.STAGE_CLEAR ||
+        this.state === GameState.GAME_OVER || this.state === GameState.VICTORY) {
       this.renderGameplay(ctx);
     } else {
-      // Menu background
       this.renderMenuBackground(ctx);
     }
 
-    // Particles (always render)
+    // Particles
     this.particles.forEach(p => p.draw(ctx));
+
+    ctx.restore();
+
+    // FPS display
+    if (this.options.showFPS) {
+      ctx.fillStyle = '#0f0';
+      ctx.font = '12px monospace';
+      ctx.fillText(`FPS: ${this.fps}`, CANVAS_W - 70, 15);
+    }
   }
 
   renderMenuBackground(ctx) {
-    // Animated starfield
-    ctx.fillStyle = '#0a0a1a';
+    // Deep space background
+    const stage = STAGES[this.currentStage] || STAGES[0];
+    ctx.fillStyle = '#060612';
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-    const time = Date.now() / 1000;
-    for (let i = 0; i < 80; i++) {
-      const x = (i * 137.5 + time * 20 * ((i % 3) + 1)) % CANVAS_W;
-      const y = (i * 97.3 + time * 5) % CANVAS_H;
-      const size = (i % 3) + 1;
-      ctx.fillStyle = `rgba(255, 255, 255, ${0.3 + (i % 5) * 0.1})`;
-      ctx.fillRect(x, y, size, size);
-    }
+
+    // Animated nebula
+    const time = Date.now() / 2000;
+    const nebulaGrad = ctx.createRadialGradient(
+      CANVAS_W / 2 + Math.sin(time) * 100, CANVAS_H / 2 + Math.cos(time) * 50, 50,
+      CANVAS_W / 2, CANVAS_H / 2, CANVAS_W * 0.6
+    );
+    nebulaGrad.addColorStop(0, 'rgba(80, 20, 100, 0.15)');
+    nebulaGrad.addColorStop(0.5, 'rgba(20, 10, 60, 0.1)');
+    nebulaGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = nebulaGrad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // Stars
+    this.stars.forEach(star => {
+      star.x -= star.speed * 0.3;
+      if (star.x < 0) { star.x = CANVAS_W; star.y = Math.random() * CANVAS_H; }
+      const twinkle = 0.5 + Math.sin(Date.now() / 500 + star.x) * 0.3;
+      ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness * twinkle})`;
+      ctx.fillRect(star.x, star.y, star.size, star.size);
+    });
   }
 
   renderGameplay(ctx) {
-    // Background - space with scrolling stars
-    ctx.fillStyle = '#0a0a1a';
+    const stage = STAGES[this.currentStage];
+
+    // Stage-specific background
+    ctx.fillStyle = stage.bgColor;
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
     // Scrolling stars
-    for (let i = 0; i < 60; i++) {
-      const speed = (i % 3) + 1;
-      const x = ((i * 137.5 - this.bgScrollX * speed) % CANVAS_W + CANVAS_W) % CANVAS_W;
-      const y = (i * 97.3) % CANVAS_H;
-      const size = speed;
-      ctx.fillStyle = `rgba(255, 255, 255, ${0.2 + speed * 0.15})`;
-      ctx.fillRect(x, y, size, size);
+    this.stars.forEach(star => {
+      star.x -= star.speed;
+      if (star.x < 0) { star.x = CANVAS_W; star.y = Math.random() * CANVAS_H; }
+      ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness})`;
+      ctx.fillRect(star.x, star.y, star.size, star.size);
+    });
+
+    // Atmospheric gradient
+    const atmGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
+    atmGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    atmGrad.addColorStop(0.7, stage.bgAccent);
+    atmGrad.addColorStop(1, 'rgba(0, 0, 0, 0.8)');
+    ctx.fillStyle = atmGrad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // Ground platform with detail
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, GROUND_Y, CANVAS_W, CANVAS_H - GROUND_Y);
+
+    // Ground top edge (glowing line)
+    const groundGrad = ctx.createLinearGradient(0, GROUND_Y, 0, GROUND_Y + 4);
+    groundGrad.addColorStop(0, stage.bossColor);
+    groundGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = groundGrad;
+    ctx.fillRect(0, GROUND_Y, CANVAS_W, 4);
+
+    // Ground pattern
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < CANVAS_W; i += 40) {
+      ctx.beginPath();
+      ctx.moveTo(i, GROUND_Y);
+      ctx.lineTo(i, CANVAS_H);
+      ctx.stroke();
     }
 
-    // Ground platform
-    ctx.fillStyle = '#2a2a3a';
-    ctx.fillRect(0, GROUND_Y, CANVAS_W, CANVAS_H - GROUND_Y);
-    ctx.fillStyle = '#444';
-    ctx.fillRect(0, GROUND_Y, CANVAS_W, 3);
-
-    // Gimmick effects
+    // Gimmick effects (drawn behind entities)
     this.gimmicks.draw(ctx);
 
     // Draw entities
     if (this.player) this.player.draw(ctx);
-    if (this.boss && !this.boss.defeated) this.boss.draw(ctx);
+    if (this.boss) this.boss.draw(ctx);
   }
 
   // ==================== EFFECTS ====================
@@ -1718,18 +2406,17 @@ class Game {
     for (let i = 0; i < count; i++) {
       this.particles.push(new Particle(
         x, y,
-        (Math.random() - 0.5) * 6,
-        (Math.random() - 0.5) * 6,
+        (Math.random() - 0.5) * 8,
+        (Math.random() - 0.5) * 8,
         color,
-        20 + Math.random() * 20
+        25 + Math.random() * 25
       ));
     }
   }
 
-  shakeScreen() {
-    const container = document.getElementById('game-container');
-    container.classList.add('shake');
-    setTimeout(() => container.classList.remove('shake'), 100);
+  triggerScreenShake(intensity) {
+    this.screenShakeTimer = 10;
+    this.screenShakeIntensity = intensity;
   }
 
   // ==================== UTILITY ====================

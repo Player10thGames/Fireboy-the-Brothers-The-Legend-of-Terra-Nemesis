@@ -6,6 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="screen-orientation" content="landscape">
+    <meta name="description" content="Fireboy The Brothers: The Legend of Terra Nemesis - Boss Rush Mode. Fight 7 epic bosses with 4 unique characters!">
     <title>Fireboy: The Legend of Terra Nemesis - Boss Rush Mode</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -16,20 +17,22 @@
 
     <!-- HUD Overlay -->
     <div id="hud-overlay">
-        <div class="hud-section">
+        <div class="hud-section hud-left">
             <div class="hud-label" id="hud-player-name">Fireboy</div>
             <div class="health-bar-bg">
                 <div class="health-bar-fill" id="player-hp-fill"></div>
             </div>
         </div>
-        <div class="hud-section" style="text-align:right">
+        <div class="hud-center">
+            <div id="hud-stage">STAGE 1</div>
+            <div id="hud-score">SCORE: 0</div>
+        </div>
+        <div class="hud-section hud-right">
             <div class="hud-label" id="hud-boss-name">Boss</div>
             <div class="health-bar-bg">
                 <div class="health-bar-fill" id="boss-hp-fill"></div>
             </div>
         </div>
-        <div id="hud-stage">STAGE 1</div>
-        <div id="hud-score">SCORE: 0</div>
     </div>
 
     <!-- Time Attack Timer -->
@@ -42,13 +45,18 @@
 
     <!-- Cutscene Overlay -->
     <div id="cutscene-overlay">
-        <div class="cutscene-speaker" id="cutscene-speaker">STAGE 1</div>
-        <div class="cutscene-text" id="cutscene-text"></div>
-        <div class="cutscene-skip">Press any key to continue...</div>
+        <div class="cutscene-box">
+            <div class="cutscene-speaker" id="cutscene-speaker">STAGE 1</div>
+            <div class="cutscene-text" id="cutscene-text"></div>
+            <div class="cutscene-skip">Press any key to continue...</div>
+        </div>
     </div>
 
     <!-- Boss Warning -->
-    <div id="boss-warning">WARNING!</div>
+    <div id="boss-warning">
+        <div class="warning-text">WARNING!</div>
+        <div class="warning-sub">BOSS APPROACHING</div>
+    </div>
 
     <!-- Stage Clear -->
     <div id="stage-clear">
@@ -61,7 +69,7 @@
         <h2 id="gameover-title">GAME OVER</h2>
         <p class="result-text" id="gameover-result"></p>
         <p class="result-text" id="gameover-time" style="display:none;color:#00ffcc"></p>
-        <div style="margin-top:20px">
+        <div class="gameover-buttons">
             <button class="menu-btn" onclick="game.retryStage()">RETRY</button>
             <button class="menu-btn" onclick="game.returnToMenu()">MENU</button>
         </div>
@@ -85,10 +93,11 @@
             <div class="dpad-btn dpad-down" id="dpad-down">▼</div>
             <div class="dpad-btn dpad-left" id="dpad-left">◀</div>
             <div class="dpad-btn dpad-right" id="dpad-right">▶</div>
+            <div class="dpad-center"></div>
         </div>
         <div class="touch-buttons">
             <div class="touch-action-btn jump-btn" id="btn-jump">JUMP</div>
-            <div class="touch-action-btn" id="btn-fire">FIRE</div>
+            <div class="touch-action-btn fire-btn" id="btn-fire">FIRE</div>
         </div>
         <div class="touch-pause" id="btn-pause">⏸</div>
     </div>
