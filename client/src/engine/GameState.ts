@@ -155,6 +155,12 @@ export class GameStateManager {
    */
   private notifyListeners(): void {
     const state = this.getState();
-    this.listeners.forEach(listener => listener(state));
+    this.listeners.forEach(listener => {
+      try {
+        listener(state);
+      } catch (err) {
+        console.error('GameStateManager: listener threw an error:', err);
+      }
+    });
   }
 }

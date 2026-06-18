@@ -58,21 +58,36 @@ export class AssetLoader {
    * Get music asset path
    */
   static getMusic(key: string): string {
-    return ASSET_PATHS.music[key] || '';
+    const path = ASSET_PATHS.music[key];
+    if (!path) {
+      console.warn(`AssetLoader: unknown music key "${key}"`);
+      return '';
+    }
+    return path;
   }
 
   /**
    * Get SFX asset path
    */
   static getSFX(key: string): string {
-    return ASSET_PATHS.sfx[key] || '';
+    const path = ASSET_PATHS.sfx[key];
+    if (!path) {
+      console.warn(`AssetLoader: unknown SFX key "${key}"`);
+      return '';
+    }
+    return path;
   }
 
   /**
    * Get image asset path
    */
   static getImage(key: string): string {
-    return ASSET_PATHS.images[key] || '';
+    const path = ASSET_PATHS.images[key];
+    if (!path) {
+      console.warn(`AssetLoader: unknown image key "${key}"`);
+      return '';
+    }
+    return path;
   }
 
   /**

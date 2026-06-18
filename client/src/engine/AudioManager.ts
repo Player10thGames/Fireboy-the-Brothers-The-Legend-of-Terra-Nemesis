@@ -75,8 +75,8 @@ export class AudioManager {
     if (audio) {
       audio.currentTime = 0;
       audio.volume = this.sfxVolume * this.masterVolume;
-      audio.play().catch(() => {
-        // Audio playback failed (common on mobile without user interaction)
+      audio.play().catch((err) => {
+        console.warn(`SFX playback failed for "${urlOrName}":`, err);
       });
     }
   }
@@ -97,8 +97,8 @@ export class AudioManager {
     this.currentMusic = new Audio(urlOrName);
     this.currentMusic.loop = loop;
     this.currentMusic.volume = this.musicVolume * this.masterVolume;
-    this.currentMusic.play().catch(() => {
-      // Audio playback failed
+    this.currentMusic.play().catch((err) => {
+      console.warn(`Music playback failed for "${urlOrName}":`, err);
     });
   }
 
@@ -126,8 +126,8 @@ export class AudioManager {
    */
   resumeMusic(): void {
     if (this.currentMusic) {
-      this.currentMusic.play().catch(() => {
-        // Audio playback failed
+      this.currentMusic.play().catch((err) => {
+        console.warn('Music resume failed:', err);
       });
     }
   }
@@ -188,8 +188,8 @@ export class AudioManager {
   unmute(): void {
     this.isMuted = false;
     if (this.currentMusic) {
-      this.currentMusic.play().catch(() => {
-        // Audio playback failed
+      this.currentMusic.play().catch((err) => {
+        console.warn('Unmute playback failed:', err);
       });
     }
   }
@@ -227,8 +227,8 @@ export class AudioManager {
    */
   resumeAudioContext(): void {
     if (this.audioContext && this.audioContext.state === 'suspended') {
-      this.audioContext.resume().catch(() => {
-        // Resume failed
+      this.audioContext.resume().catch((err) => {
+        console.warn('AudioContext resume failed:', err);
       });
     }
   }

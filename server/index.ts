@@ -20,7 +20,15 @@ async function startServer() {
 
   // Handle client-side routing - serve index.html for all routes
   app.get("*", (_req, res) => {
-    res.sendFile(path.join(staticPath, "index.html"));
+    const indexPath = path.join(staticPath, "index.html");
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error("Failed to serve index.html:", err);
+        if (!res.headersSent) {
+          res.status(500).send("Internal Server Error");
+        }
+      }
+    });
   });
 
   const port = process.env.PORT || 3000;
@@ -28,6 +36,14 @@ async function startServer() {
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
   });
+
+  server.on("error", (err) => {
+    console.error("Server error:", err);
+    process.exit(1);
+  });
 }
 
-startServer().catch(console.error);
+startServer().catch((err) => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
+});
