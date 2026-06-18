@@ -2,99 +2,147 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="screen-orientation" content="landscape">
-    <title>Fireboy: The Legend of Terra Nemesis - Boss Rush Mode</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Fireboy The Brothers - The Legend of Terra Nemesis (Boss Rush Mode)">
+    <title>Fireboy The Brothers - The Legend of Terra Nemesis</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-<div id="game-container">
-    <canvas id="gameCanvas"></canvas>
-
-    <!-- HUD Overlay -->
-    <div id="hud-overlay">
-        <div class="hud-section">
-            <div class="hud-label" id="hud-player-name">Fireboy</div>
-            <div class="health-bar-bg">
-                <div class="health-bar-fill" id="player-hp-fill"></div>
+    <div id="game-container">
+        <!-- Main Menu -->
+        <div id="main-menu" class="menu active">
+            <div class="menu-content">
+                <h1>Fireboy The Brothers</h1>
+                <h2>The Legend of Terra Nemesis</h2>
+                <div class="menu-buttons">
+                    <button class="menu-btn" data-action="start-game">Start Game</button>
+                    <button class="menu-btn" data-action="stage-select">Stage Select</button>
+                    <button class="menu-btn" data-action="time-attack">Time Attack</button>
+                    <button class="menu-btn" data-action="extra">Extra</button>
+                    <button class="menu-btn" data-action="options">Options</button>
+                </div>
             </div>
         </div>
-        <div class="hud-section" style="text-align:right">
-            <div class="hud-label" id="hud-boss-name">Boss</div>
-            <div class="health-bar-bg">
-                <div class="health-bar-fill" id="boss-hp-fill"></div>
+
+        <!-- Stage Select Menu -->
+        <div id="stage-select" class="menu">
+            <div class="menu-content">
+                <h1>Stage Select</h1>
+                <div class="stage-grid">
+                    <button class="stage-btn" data-stage="1">Stage 1: Duo Mecha Rocket</button>
+                    <button class="stage-btn" data-stage="2">Stage 2: Butch</button>
+                    <button class="stage-btn" data-stage="3">Stage 3: Mandler</button>
+                    <button class="stage-btn" data-stage="4">Stage 4: Crusher-Bot MK.II</button>
+                    <button class="stage-btn" data-stage="5">Stage 5: Metal Sonic</button>
+                    <button class="stage-btn" data-stage="6">Stage 6: Roaring Knight</button>
+                    <button class="stage-btn" data-stage="7">Stage 7: Roaring Metal</button>
+                </div>
+                <button class="menu-btn back-btn" data-action="back">Back to Menu</button>
             </div>
         </div>
-        <div id="hud-stage">STAGE 1</div>
-        <div id="hud-score">SCORE: 0</div>
-    </div>
 
-    <!-- Time Attack Timer -->
-    <div id="time-attack-timer">00:00.00</div>
-
-    <!-- Menu Overlay -->
-    <div id="menu-overlay">
-        <div id="menu-content"></div>
-    </div>
-
-    <!-- Cutscene Overlay -->
-    <div id="cutscene-overlay">
-        <div class="cutscene-speaker" id="cutscene-speaker">STAGE 1</div>
-        <div class="cutscene-text" id="cutscene-text"></div>
-        <div class="cutscene-skip">Press any key to continue...</div>
-    </div>
-
-    <!-- Boss Warning -->
-    <div id="boss-warning">WARNING!</div>
-
-    <!-- Stage Clear -->
-    <div id="stage-clear">
-        <h2>STAGE CLEAR!</h2>
-        <p id="clear-stage-name"></p>
-    </div>
-
-    <!-- Game Over / Victory -->
-    <div id="game-over">
-        <h2 id="gameover-title">GAME OVER</h2>
-        <p class="result-text" id="gameover-result"></p>
-        <p class="result-text" id="gameover-time" style="display:none;color:#00ffcc"></p>
-        <div style="margin-top:20px">
-            <button class="menu-btn" onclick="game.retryStage()">RETRY</button>
-            <button class="menu-btn" onclick="game.returnToMenu()">MENU</button>
+        <!-- Character Select Menu -->
+        <div id="character-select" class="menu">
+            <div class="menu-content">
+                <h1>Select Character</h1>
+                <div class="character-grid">
+                    <button class="character-btn" data-character="fireboy">Fireboy</button>
+                    <button class="character-btn" data-character="caroline">Caroline</button>
+                    <button class="character-btn" data-character="butch">Butch</button>
+                    <button class="character-btn" data-character="anabel">Anabel</button>
+                </div>
+                <button class="menu-btn back-btn" data-action="back">Back</button>
+            </div>
         </div>
-    </div>
 
-    <!-- Pause Overlay -->
-    <div id="pause-overlay">
-        <div class="pause-content">
-            <h2>PAUSED</h2>
-            <div class="menu-buttons">
-                <button class="menu-btn" onclick="game.resumeGame()">RESUME</button>
-                <button class="menu-btn" onclick="game.returnToMenu()">QUIT TO MENU</button>
+        <!-- Options Menu -->
+        <div id="options-menu" class="menu">
+            <div class="menu-content">
+                <h1>Options</h1>
+                <div class="options-content">
+                    <div class="option-item">
+                        <label for="volume-control">Volume:</label>
+                        <input type="range" id="volume-control" min="0" max="100" value="100">
+                    </div>
+                    <div class="option-item">
+                        <label for="difficulty-control">Difficulty:</label>
+                        <select id="difficulty-control">
+                            <option value="easy">Easy</option>
+                            <option value="normal" selected>Normal</option>
+                            <option value="hard">Hard</option>
+                            <option value="extreme">Extreme</option>
+                        </select>
+                    </div>
+                    <div class="option-item">
+                        <label for="control-type">Control Type:</label>
+                        <select id="control-type">
+                            <option value="dpad">D-Pad</option>
+                            <option value="buttons">Buttons</option>
+                            <option value="keyboard" selected>Keyboard</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="menu-btn back-btn" data-action="back">Back to Menu</button>
+            </div>
+        </div>
+
+        <!-- Game Canvas -->
+        <canvas id="gameCanvas" class="hidden"></canvas>
+
+        <!-- HUD (Heads Up Display) -->
+        <div id="hud" class="hidden">
+            <div class="hud-item health">
+                <label>Health:</label>
+                <div class="health-bar">
+                    <div id="health-fill" class="health-fill"></div>
+                </div>
+                <span id="health-text">100/100</span>
+            </div>
+            <div class="hud-item stage-info">
+                <span id="stage-name">Stage 1</span>
+                <span id="boss-name">Duo Mecha Rocket</span>
+            </div>
+            <div class="hud-item timer">
+                <label>Time:</label>
+                <span id="timer">00:00</span>
+            </div>
+            <div class="hud-item score">
+                <label>Score:</label>
+                <span id="score">0</span>
+            </div>
+            <button id="pause-btn" class="control-btn">Pause</button>
+        </div>
+
+        <!-- Pause Menu -->
+        <div id="pause-menu" class="menu hidden">
+            <div class="menu-content">
+                <h1>Paused</h1>
+                <div class="menu-buttons">
+                    <button class="menu-btn" data-action="resume">Resume Game</button>
+                    <button class="menu-btn" data-action="restart">Restart Stage</button>
+                    <button class="menu-btn" data-action="main-menu">Main Menu</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over" class="menu hidden">
+            <div class="menu-content">
+                <h1>Game Over</h1>
+                <div id="game-over-content">
+                    <p id="game-over-message">You defeated the boss!</p>
+                    <p id="final-score">Final Score: 0</p>
+                    <p id="final-time">Time: 00:00</p>
+                </div>
+                <div class="menu-buttons">
+                    <button class="menu-btn" data-action="restart">Try Again</button>
+                    <button class="menu-btn" data-action="next-stage">Next Stage</button>
+                    <button class="menu-btn" data-action="main-menu">Main Menu</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Touch Controls -->
-    <div id="touch-controls">
-        <div class="touch-dpad">
-            <div class="dpad-btn dpad-up" id="dpad-up">▲</div>
-            <div class="dpad-btn dpad-down" id="dpad-down">▼</div>
-            <div class="dpad-btn dpad-left" id="dpad-left">◀</div>
-            <div class="dpad-btn dpad-right" id="dpad-right">▶</div>
-        </div>
-        <div class="touch-buttons">
-            <div class="touch-action-btn jump-btn" id="btn-jump">JUMP</div>
-            <div class="touch-action-btn" id="btn-fire">FIRE</div>
-        </div>
-        <div class="touch-pause" id="btn-pause">⏸</div>
-    </div>
-</div>
-
-<script src="game.js"></script>
-
+    <script src="game.js"></script>
 </body>
 </html>
