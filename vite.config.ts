@@ -104,6 +104,8 @@ function vitePluginManusDebugCollector(): Plugin {
           return next();
         }
 
+        const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2MB limit to prevent DoS
+
         const handlePayload = (payload: any) => {
           // Write logs directly to files
           if (payload.consoleLogs?.length > 0) {
@@ -132,7 +134,15 @@ function vitePluginManusDebugCollector(): Plugin {
         }
 
         let body = "";
+        let bodyBytes = 0;
         req.on("data", (chunk) => {
+          bodyBytes += chunk.length;
+          if (bodyBytes > MAX_BODY_BYTES) {
+            req.destroy();
+            res.writeHead(413, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ success: false, error: "Payload too large" }));
+            return;
+          }
           body += chunk.toString();
         });
 
@@ -159,6 +169,14 @@ function vitePluginStorageProxy(): Plugin {
         if (!key) {
           res.writeHead(400, { "Content-Type": "text/plain" });
           res.end("Missing storage key");
+          return;
+        }
+
+        // Reject path traversal attempts
+        const decodedKey = decodeURIComponent(key);
+        if (decodedKey.includes("..") || decodedKey.startsWith("/") || decodedKey.includes("\\")) {
+          res.writeHead(400, { "Content-Type": "text/plain" });
+          res.end("Invalid storage key");
           return;
         }
 
