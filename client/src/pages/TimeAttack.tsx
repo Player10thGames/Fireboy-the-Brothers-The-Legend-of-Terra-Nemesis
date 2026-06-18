@@ -4,6 +4,7 @@
  */
 import React, { useState } from 'react';
 import { getAllBosses } from '@/entities/bosses';
+import { formatTime } from '@/lib/formatTime';
 
 interface TimeAttackRecord {
   stage: number;
@@ -18,12 +19,7 @@ interface TimeAttackProps {
   records?: TimeAttackRecord[];
 }
 
-function formatTime(ms: number): string {
-  const minutes = Math.floor(ms / 60000);
-  const seconds = Math.floor((ms % 60000) / 1000);
-  const centiseconds = Math.floor((ms % 1000) / 10);
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
-}
+
 
 const DEMO_RECORDS: TimeAttackRecord[] = [
   { stage: 7, time: 185340, character: 'Fireboy', date: '2025-06-10' },
