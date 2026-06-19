@@ -4,145 +4,304 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Fireboy The Brothers - The Legend of Terra Nemesis (Boss Rush Mode)">
+    <meta name="author" content="Player10thGames">
     <title>Fireboy The Brothers - The Legend of Terra Nemesis</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/menu.css">
+    <link rel="stylesheet" href="styles/controls.css">
 </head>
 <body>
-    <div id="game-container">
-        <!-- Main Menu -->
-        <div id="main-menu" class="menu active">
+    <!-- Main Game Container -->
+    <div id="game-container" class="game-container">
+        <!-- Canvas for rendering game -->
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+        <!-- Main Menu Screen -->
+        <div id="mainMenu" class="menu-screen active">
             <div class="menu-content">
-                <h1>Fireboy The Brothers</h1>
-                <h2>The Legend of Terra Nemesis</h2>
-                <div class="menu-buttons">
-                    <button class="menu-btn" data-action="start-game">Start Game</button>
-                    <button class="menu-btn" data-action="stage-select">Stage Select</button>
-                    <button class="menu-btn" data-action="time-attack">Time Attack</button>
-                    <button class="menu-btn" data-action="extra">Extra</button>
-                    <button class="menu-btn" data-action="options">Options</button>
-                </div>
+                <h1 class="game-title">Fireboy The Brothers</h1>
+                <h2 class="game-subtitle">The Legend of Terra Nemesis</h2>
+                <p class="game-mode">Boss Rush Mode</p>
+                
+                <nav class="menu-nav">
+                    <button id="btnStageSelect" class="menu-button">Stage Select</button>
+                    <button id="btnTimeAttack" class="menu-button">Time Attack</button>
+                    <button id="btnExtra" class="menu-button">Extra</button>
+                    <button id="btnOptions" class="menu-button">Options</button>
+                </nav>
             </div>
         </div>
 
-        <!-- Stage Select Menu -->
-        <div id="stage-select" class="menu">
+        <!-- Stage Select Screen -->
+        <div id="stageSelectMenu" class="menu-screen">
             <div class="menu-content">
                 <h1>Stage Select</h1>
-                <div class="stage-grid">
-                    <button class="stage-btn" data-stage="1">Stage 1: Duo Mecha Rocket</button>
-                    <button class="stage-btn" data-stage="2">Stage 2: Butch</button>
-                    <button class="stage-btn" data-stage="3">Stage 3: Mandler</button>
-                    <button class="stage-btn" data-stage="4">Stage 4: Crusher-Bot MK.II</button>
-                    <button class="stage-btn" data-stage="5">Stage 5: Metal Sonic</button>
-                    <button class="stage-btn" data-stage="6">Stage 6: Roaring Knight</button>
-                    <button class="stage-btn" data-stage="7">Stage 7: Roaring Metal</button>
+                <div class="stages-grid">
+                    <button class="stage-button" data-stage="1">
+                        <span class="stage-name">Stage 1</span>
+                        <span class="stage-boss">Duo Mecha Rocket</span>
+                    </button>
+                    <button class="stage-button" data-stage="2">
+                        <span class="stage-name">Stage 2</span>
+                        <span class="stage-boss">Butch</span>
+                    </button>
+                    <button class="stage-button" data-stage="3">
+                        <span class="stage-name">Stage 3</span>
+                        <span class="stage-boss">Mandler</span>
+                    </button>
+                    <button class="stage-button" data-stage="4">
+                        <span class="stage-name">Stage 4</span>
+                        <span class="stage-boss">Crusher-Bot MK.II</span>
+                    </button>
+                    <button class="stage-button" data-stage="5">
+                        <span class="stage-name">Stage 5</span>
+                        <span class="stage-boss">Metal Sonic</span>
+                    </button>
+                    <button class="stage-button" data-stage="6">
+                        <span class="stage-name">Stage 6 - Finale</span>
+                        <span class="stage-boss">Roaring Knight</span>
+                    </button>
+                    <button class="stage-button" data-stage="7">
+                        <span class="stage-name">Stage 7 - True Finale</span>
+                        <span class="stage-boss">Roaring Metal</span>
+                    </button>
                 </div>
-                <button class="menu-btn back-btn" data-action="back">Back to Menu</button>
+                <button id="btnBackFromStages" class="menu-button back-button">Back</button>
             </div>
         </div>
 
-        <!-- Character Select Menu -->
-        <div id="character-select" class="menu">
+        <!-- Character Select Screen -->
+        <div id="characterSelectMenu" class="menu-screen">
             <div class="menu-content">
                 <h1>Select Character</h1>
-                <div class="character-grid">
-                    <button class="character-btn" data-character="fireboy">Fireboy</button>
-                    <button class="character-btn" data-character="caroline">Caroline</button>
-                    <button class="character-btn" data-character="butch">Butch</button>
-                    <button class="character-btn" data-character="anabel">Anabel</button>
+                <div class="characters-grid">
+                    <button class="character-button" data-character="fireboy">
+                        <span class="character-name">Fireboy</span>
+                    </button>
+                    <button class="character-button" data-character="caroline">
+                        <span class="character-name">Caroline</span>
+                    </button>
+                    <button class="character-button" data-character="butch">
+                        <span class="character-name">Butch</span>
+                    </button>
+                    <button class="character-button" data-character="anabel">
+                        <span class="character-name">Anabel</span>
+                    </button>
                 </div>
-                <button class="menu-btn back-btn" data-action="back">Back</button>
+                <button id="btnBackFromCharacters" class="menu-button back-button">Back</button>
             </div>
         </div>
 
-        <!-- Options Menu -->
-        <div id="options-menu" class="menu">
+        <!-- Time Attack Screen -->
+        <div id="timeAttackMenu" class="menu-screen">
+            <div class="menu-content">
+                <h1>Time Attack</h1>
+                <p>Defeat all bosses in the fastest time possible!</p>
+                <button id="btnStartTimeAttack" class="menu-button">Start Time Attack</button>
+                <button id="btnBackFromTimeAttack" class="menu-button back-button">Back</button>
+            </div>
+        </div>
+
+        <!-- Extra Menu Screen -->
+        <div id="extraMenu" class="menu-screen">
+            <div class="menu-content">
+                <h1>Extra</h1>
+                <nav class="extra-nav">
+                    <button id="btnGallery" class="menu-button">Gallery</button>
+                    <button id="btnCredits" class="menu-button">Credits</button>
+                    <button id="btnBackFromExtra" class="menu-button back-button">Back</button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Options Menu Screen -->
+        <div id="optionsMenu" class="menu-screen">
             <div class="menu-content">
                 <h1>Options</h1>
                 <div class="options-content">
-                    <div class="option-item">
-                        <label for="volume-control">Volume:</label>
-                        <input type="range" id="volume-control" min="0" max="100" value="100">
+                    <div class="option-group">
+                        <label for="volumeSlider">Master Volume:</label>
+                        <input type="range" id="volumeSlider" min="0" max="100" value="100">
+                        <span id="volumeValue">100%</span>
                     </div>
-                    <div class="option-item">
-                        <label for="difficulty-control">Difficulty:</label>
-                        <select id="difficulty-control">
+                    <div class="option-group">
+                        <label for="difficultySelect">Difficulty:</label>
+                        <select id="difficultySelect">
                             <option value="easy">Easy</option>
                             <option value="normal" selected>Normal</option>
                             <option value="hard">Hard</option>
-                            <option value="extreme">Extreme</option>
+                            <option value="lunatic">Lunatic</option>
                         </select>
                     </div>
-                    <div class="option-item">
-                        <label for="control-type">Control Type:</label>
-                        <select id="control-type">
+                    <div class="option-group">
+                        <label for="controlTypeSelect">Control Type:</label>
+                        <select id="controlTypeSelect">
+                            <option value="keyboard" selected>Keyboard</option>
                             <option value="dpad">D-Pad</option>
                             <option value="buttons">Buttons</option>
-                            <option value="keyboard" selected>Keyboard</option>
                         </select>
                     </div>
+                    <div class="option-group">
+                        <label>
+                            <input type="checkbox" id="screenShakeToggle" checked>
+                            Screen Shake
+                        </label>
+                    </div>
+                    <div class="option-group">
+                        <label>
+                            <input type="checkbox" id="bgmToggle" checked>
+                            Background Music
+                        </label>
+                    </div>
+                    <div class="option-group">
+                        <label>
+                            <input type="checkbox" id="sfxToggle" checked>
+                            Sound Effects
+                        </label>
+                    </div>
                 </div>
-                <button class="menu-btn back-btn" data-action="back">Back to Menu</button>
+                <button id="btnBackFromOptions" class="menu-button back-button">Back</button>
             </div>
         </div>
 
-        <!-- Game Canvas -->
-        <canvas id="gameCanvas" class="hidden"></canvas>
-
-        <!-- HUD (Heads Up Display) -->
-        <div id="hud" class="hidden">
-            <div class="hud-item health">
-                <label>Health:</label>
-                <div class="health-bar">
-                    <div id="health-fill" class="health-fill"></div>
+        <!-- Game HUD (In-Game) -->
+        <div id="gameHUD" class="game-hud hidden">
+            <div class="hud-top">
+                <div class="player-info">
+                    <span id="playerName">Fireboy</span>
+                    <div class="health-bar">
+                        <div id="playerHealth" class="health-fill"></div>
+                    </div>
+                    <span id="playerHealthText">100/100</span>
                 </div>
-                <span id="health-text">100/100</span>
+                <div class="stage-info">
+                    <span id="stageName">Stage 1</span>
+                    <span id="bossName">Duo Mecha Rocket</span>
+                </div>
+                <div class="game-stats">
+                    <span>Time: <span id="gameTime">0:00</span></span>
+                    <span>Score: <span id="gameScore">0</span></span>
+                </div>
             </div>
-            <div class="hud-item stage-info">
-                <span id="stage-name">Stage 1</span>
-                <span id="boss-name">Duo Mecha Rocket</span>
+
+            <div class="hud-bottom">
+                <div class="boss-health">
+                    <span id="bossHealthLabel">Boss</span>
+                    <div class="boss-health-bar">
+                        <div id="bossHealth" class="health-fill"></div>
+                    </div>
+                    <span id="bossHealthText">100/100</span>
+                </div>
             </div>
-            <div class="hud-item timer">
-                <label>Time:</label>
-                <span id="timer">00:00</span>
+        </div>
+
+        <!-- Touch Screen Controls -->
+        <div id="touchControls" class="touch-controls hidden">
+            <!-- D-Pad -->
+            <div class="dpad">
+                <button id="btnUp" class="dpad-button dpad-up" aria-label="Up"></button>
+                <button id="btnLeft" class="dpad-button dpad-left" aria-label="Left"></button>
+                <button id="btnDown" class="dpad-button dpad-down" aria-label="Down"></button>
+                <button id="btnRight" class="dpad-button dpad-right" aria-label="Right"></button>
             </div>
-            <div class="hud-item score">
-                <label>Score:</label>
-                <span id="score">0</span>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button id="btnAttack" class="action-button action-attack" aria-label="Attack">ATK</button>
+                <button id="btnJump" class="action-button action-jump" aria-label="Jump">JMP</button>
+                <button id="btnSpecial" class="action-button action-special" aria-label="Special">SP</button>
             </div>
-            <button id="pause-btn" class="control-btn">Pause</button>
+
+            <!-- Play/Pause -->
+            <div class="pause-controls">
+                <button id="btnPlayPause" class="pause-button" aria-label="Play/Pause">⏸</button>
+            </div>
         </div>
 
         <!-- Pause Menu -->
-        <div id="pause-menu" class="menu hidden">
+        <div id="pauseMenu" class="menu-screen hidden">
             <div class="menu-content">
                 <h1>Paused</h1>
+                <nav class="pause-nav">
+                    <button id="btnResume" class="menu-button">Resume</button>
+                    <button id="btnRetry" class="menu-button">Retry Stage</button>
+                    <button id="btnQuitToMenu" class="menu-button">Quit to Menu</button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Stage Complete Screen -->
+        <div id="stageCompleteScreen" class="menu-screen hidden">
+            <div class="menu-content">
+                <h1>Stage Clear!</h1>
+                <div id="stageStats" class="stage-stats">
+                    <p>Time: <span id="clearTime">0:00</span></p>
+                    <p>Score: <span id="clearScore">0</span></p>
+                </div>
                 <div class="menu-buttons">
-                    <button class="menu-btn" data-action="resume">Resume Game</button>
-                    <button class="menu-btn" data-action="restart">Restart Stage</button>
-                    <button class="menu-btn" data-action="main-menu">Main Menu</button>
+                    <button id="btnNextStage" class="menu-button">Next Stage</button>
+                    <button id="btnRetryStage" class="menu-button">Retry</button>
+                    <button id="btnQuitStage" class="menu-button">Quit to Menu</button>
                 </div>
             </div>
         </div>
 
         <!-- Game Over Screen -->
-        <div id="game-over" class="menu hidden">
+        <div id="gameOverScreen" class="menu-screen hidden">
             <div class="menu-content">
                 <h1>Game Over</h1>
-                <div id="game-over-content">
-                    <p id="game-over-message">You defeated the boss!</p>
-                    <p id="final-score">Final Score: 0</p>
-                    <p id="final-time">Time: 00:00</p>
+                <p id="gameOverMessage">You were defeated...</p>
+                <div id="gameOverStats" class="game-over-stats">
+                    <p>Final Score: <span id="finalScore">0</span></p>
+                    <p>Time Survived: <span id="finalTime">0:00</span></p>
                 </div>
                 <div class="menu-buttons">
-                    <button class="menu-btn" data-action="restart">Try Again</button>
-                    <button class="menu-btn" data-action="next-stage">Next Stage</button>
-                    <button class="menu-btn" data-action="main-menu">Main Menu</button>
+                    <button id="btnRetryGameOver" class="menu-button">Retry</button>
+                    <button id="btnQuitGameOver" class="menu-button">Quit to Menu</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Gallery Screen -->
+        <div id="galleryScreen" class="menu-screen hidden">
+            <div class="menu-content">
+                <h1>Gallery</h1>
+                <div id="galleryContent" class="gallery-grid">
+                    <!-- Gallery items will be dynamically loaded -->
+                </div>
+                <button id="btnBackFromGallery" class="menu-button back-button">Back</button>
+            </div>
+        </div>
+
+        <!-- Credits Screen -->
+        <div id="creditsScreen" class="menu-screen hidden">
+            <div class="menu-content">
+                <h1>Credits</h1>
+                <div id="creditsContent" class="credits-text">
+                    <h3>Game Development Team</h3>
+                    <p><strong>Developer:</strong> Player10thGames</p>
+                    <h3>Characters</h3>
+                    <p>Fireboy, Caroline, Butch, Anabel</p>
+                    <h3>Music & Sound</h3>
+                    <p>Original compositions and sound effects</p>
+                    <h3>Special Thanks</h3>
+                    <p>To all players and fans of Fireboy The Brothers</p>
+                </div>
+                <button id="btnBackFromCredits" class="menu-button back-button">Back</button>
             </div>
         </div>
     </div>
 
-    <script src="game.js"></script>
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/menu.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/bosses.js"></script>
+    <script src="js/stages.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
